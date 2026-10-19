@@ -25,7 +25,13 @@ type LensStatus = 'idle' | 'loading' | 'result'
 type ScreenMode = 'home' | 'events' | 'community' | 'my' | 'lens' | 'detail' | 'coupons'
 type NavMode = 'home' | 'events' | 'community' | 'my' | 'lens' | 'coupons'
 
-export function PoppleApp({ initialMode = 'home' }: { initialMode?: ScreenMode } = {}) {
+export function PoppleApp({
+  initialMode = 'home',
+  initialSearch,
+}: {
+  initialMode?: ScreenMode
+  initialSearch?: string
+} = {}) {
   const [mode, setMode] = useState<ScreenMode>(initialMode)
   const [previousMode, setPreviousMode] = useState<NavMode>(initialMode === 'lens' ? 'home' : initialMode as NavMode)
 
@@ -191,6 +197,7 @@ export function PoppleApp({ initialMode = 'home' }: { initialMode?: ScreenMode }
   if (mode === 'home') {
     content = (
       <HomeScreen
+        initialSearch={initialSearch}
         onOpenEvents={() => {
           setMode('events')
           if (typeof window !== 'undefined') {

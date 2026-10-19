@@ -17,6 +17,13 @@ import {
   Users,
   User,
   ArrowRight,
+  Heart,
+  Flame,
+  UtensilsCrossed,
+  Music,
+  Palette,
+  Trees,
+  PawPrint,
 } from 'lucide-react'
 import type { PoppleEvent } from '@/lib/events'
 import {
@@ -35,6 +42,7 @@ import {
 } from '@/lib/theme'
 
 interface HomeScreenProps {
+  initialSearch?: string
   onOpenLens: () => void
   onSelectEvent: (event: PoppleEvent) => void
   onOpenEvents?: () => void
@@ -43,7 +51,93 @@ interface HomeScreenProps {
   onOpenCoupons?: () => void
 }
 
+interface QuickCategoryItem {
+  id: string
+  name: string
+  keyword: string
+  icon: React.ComponentType<{ className?: string }>
+  iconClass: string
+  bgClass: string
+  borderClass: string
+}
+
+const QUICK_CATEGORIES: QuickCategoryItem[] = [
+  {
+    id: 'date',
+    name: '감성 데이트',
+    keyword: '데이트',
+    icon: Heart,
+    iconClass: 'text-rose-500 fill-rose-500/20',
+    bgClass: 'bg-rose-50 hover:bg-rose-100/80',
+    borderClass: 'border-rose-100',
+  },
+  {
+    id: 'family',
+    name: '가족·아이와',
+    keyword: '가족',
+    icon: Users,
+    iconClass: 'text-amber-500',
+    bgClass: 'bg-amber-50 hover:bg-amber-100/80',
+    borderClass: 'border-amber-100',
+  },
+  {
+    id: 'popup',
+    name: '핫한 팝업',
+    keyword: '팝업',
+    icon: Flame,
+    iconClass: 'text-purple-500 fill-purple-500/20',
+    bgClass: 'bg-purple-50 hover:bg-purple-100/80',
+    borderClass: 'border-purple-100',
+  },
+  {
+    id: 'food',
+    name: '푸드·야시장',
+    keyword: '푸드',
+    icon: UtensilsCrossed,
+    iconClass: 'text-orange-500',
+    bgClass: 'bg-orange-50 hover:bg-orange-100/80',
+    borderClass: 'border-orange-100',
+  },
+  {
+    id: 'music',
+    name: '음악·공연',
+    keyword: '음악',
+    icon: Music,
+    iconClass: 'text-blue-500',
+    bgClass: 'bg-blue-50 hover:bg-blue-100/80',
+    borderClass: 'border-blue-100',
+  },
+  {
+    id: 'art',
+    name: '전시·체험',
+    keyword: '체험',
+    icon: Palette,
+    iconClass: 'text-indigo-500',
+    bgClass: 'bg-indigo-50 hover:bg-indigo-100/80',
+    borderClass: 'border-indigo-100',
+  },
+  {
+    id: 'nature',
+    name: '자연·힐링',
+    keyword: '자연',
+    icon: Trees,
+    iconClass: 'text-emerald-500',
+    bgClass: 'bg-emerald-50 hover:bg-emerald-100/80',
+    borderClass: 'border-emerald-100',
+  },
+  {
+    id: 'pet',
+    name: '반려견 동반',
+    keyword: '반려견',
+    icon: PawPrint,
+    iconClass: 'text-teal-500',
+    bgClass: 'bg-teal-50 hover:bg-teal-100/80',
+    borderClass: 'border-teal-100',
+  },
+]
+
 export function HomeScreen({
+  initialSearch,
   onOpenLens,
   onSelectEvent,
   onOpenEvents,
@@ -247,6 +341,21 @@ export function HomeScreen({
     }
   }
 
+  // initialSearch 변경 또는 URL 라우팅 진입 시 자동 검색 실행
+  useEffect(() => {
+    if (initialSearch && initialSearch.trim()) {
+      handleSearch(initialSearch.trim())
+    }
+  }, [initialSearch])
+
+  // 퀵 카테고리 아이콘 클릭 핸들러 (의미 기반 검색 실행 + URL 갱신)
+  const handleQuickCategoryClick = (catKeyword: string) => {
+    handleSearch(catKeyword)
+    if (typeof window !== 'undefined') {
+      window.history.pushState(null, '', `/search?keyword=${encodeURIComponent(catKeyword)}`)
+    }
+  }
+
   const handleClearSearch = () => {
     setKeyword('')
     setSearchQuery('')
@@ -256,6 +365,9 @@ export function HomeScreen({
     setSearchThemeName(null)
     setActiveTheme(null)
     setThemeEvents([])
+    if (typeof window !== 'undefined' && window.location.pathname.startsWith('/search')) {
+      router.push('/')
+    }
   }
 
   return (
@@ -751,6 +863,29 @@ export function HomeScreen({
                   ))}
                 </div>
               )}
+            </section>
+
+            {/* 원형 퀵 카테고리 그리드 (쿠팡/배민 스타일 원형 4x2 그리드) */}
+            <section aria-label="빠른 테마별 카테고리" className="rounded-2xl bg-white p-3.5 sm:p-4 border border-slate-200/70 shadow-2xs">
+              <div className="grid grid-cols-4 gap-y-3.5 gap-x-2">
+                {QUICK_CATEGORIES.map((cat) => (
+                  <button
+                    key={cat.id}
+                    type="button"
+                    onClick={() => handleQuickCategoryClick(cat.keyword)}
+                    className="group flex flex-col items-center gap-1.5 focus:outline-none cursor-pointer"
+                  >
+                    <div
+                      className={`relative flex size-12 sm:size-13 items-center justify-center rounded-full border transition-all duration-200 group-hover:scale-105 active:scale-90 active:opacity-80 shadow-2xs ${cat.bgClass} ${cat.borderClass}`}
+                    >
+                      <cat.icon className={`size-5.5 sm:size-6 stroke-[2.2] transition-transform duration-200 ${cat.iconClass}`} />
+                    </div>
+                    <span className="text-[11px] sm:text-xs font-bold text-slate-700 group-hover:text-slate-900 tracking-tight text-center leading-tight">
+                      {cat.name}
+                    </span>
+                  </button>
+                ))}
+              </div>
             </section>
 
             {/* 2번: 블루 혜택 배너 (POPPLE ONLY) */}
