@@ -320,14 +320,13 @@ export function HomeScreen({
               </span>
             </button>
 
-            {/* 알림 아이콘 (레드 닷) */}
+            {/* 알림 아이콘 */}
             <button
               type="button"
-              aria-label="새 알림"
+              aria-label="알림"
               className="relative p-2 rounded-full text-slate-700 hover:bg-slate-100 transition-colors"
             >
               <Bell className="size-5.5 stroke-[2]" />
-              <span className="absolute top-1.5 right-1.5 size-2 bg-red-500 rounded-full ring-2 ring-white" />
             </button>
           </div>
         </div>

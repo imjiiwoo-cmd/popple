@@ -290,7 +290,6 @@ export function CommunityScreen({
               className="relative p-2 rounded-full text-slate-700 hover:bg-slate-100 transition-colors"
             >
               <Bell className="size-5 stroke-[2]" />
-              <span className="absolute top-1.5 right-1.5 size-2 bg-red-500 rounded-full ring-2 ring-white" />
             </button>
           </div>
         </div>
