@@ -1,6 +1,10 @@
 packages:
   - '.'
 
+allowBuilds:
+  '@google/genai': true
+  protobufjs: true
+
 pmOnFail: ignore
 
 minimumReleaseAgeExclude:
