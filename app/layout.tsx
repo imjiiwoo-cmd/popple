@@ -18,6 +18,9 @@ export const metadata: Metadata = {
   alternates: {
     canonical: 'https://popple-five.vercel.app',
   },
+  verification: {
+    google: 'nHP2J4E8bdMttAh0OGBtnEPl6WWKege7c-BJmAffGHk',
+  },
   openGraph: {
     type: 'website',
     locale: 'ko_KR',
