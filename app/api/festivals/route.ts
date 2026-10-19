@@ -98,7 +98,7 @@ export async function GET(request: Request) {
       url.searchParams.set('_type', 'json')
       url.searchParams.set('eventStartDate', todayStr) // ★ 1. 오늘 날짜 기준 전달
       url.searchParams.set('arrange', 'A')
-      url.searchParams.set('numOfRows', '100')
+      url.searchParams.set('numOfRows', '300') // 전체 축제 풀 확보 (이천펫축제, 문화가 있는 날 등 포함)
 
       const res = await fetch(url.toString(), {
         signal: AbortSignal.timeout(6000),
@@ -196,6 +196,77 @@ export async function GET(request: Request) {
           (numId ? viewMap.get(numId) : undefined) ||
           viewMap.get(titleKey) ||
           0
+      }
+
+      // 4. Supabase 상위 랭킹 축제 중 festivals 풀에 누락된 축제가 있다면 TourAPI keyword 검색으로 보완
+      if (tourApiKey && tourApiKey !== 'your_tour_api_key_here') {
+        const decodedKey = decodeURIComponent(tourApiKey.trim())
+        const topViewed = [...viewData]
+          .sort((a, b) => (Number(b.view_count) || 0) - (Number(a.view_count) || 0))
+          .slice(0, 10)
+
+        for (const item of topViewed) {
+          if (!item.title || item.title === '테스트') continue
+          const cleanNumId = String(item.id || '').replace(/\D/g, '')
+          const exists = festivals.some(
+            (f) =>
+              (cleanNumId && String(f.id).replace(/\D/g, '') === cleanNumId) ||
+              (f.title && f.title.trim().toLowerCase() === item.title.trim().toLowerCase()),
+          )
+
+          if (!exists) {
+            try {
+              const kwUrl = new URL('https://apis.data.go.kr/B551011/KorService2/searchKeyword2')
+              kwUrl.searchParams.set('serviceKey', decodedKey)
+              kwUrl.searchParams.set('MobileOS', 'ETC')
+              kwUrl.searchParams.set('MobileApp', 'Popple')
+              kwUrl.searchParams.set('_type', 'json')
+              kwUrl.searchParams.set('keyword', item.title)
+              kwUrl.searchParams.set('contentTypeId', '15')
+              kwUrl.searchParams.set('arrange', 'A')
+              kwUrl.searchParams.set('numOfRows', '5')
+
+              const kwRes = await fetch(kwUrl.toString(), { signal: AbortSignal.timeout(3000) })
+              if (kwRes.ok) {
+                const kwData = await kwRes.json()
+                const kwRaw = kwData.response?.body?.items?.item
+                const kwList: TourFestivalItem[] = Array.isArray(kwRaw) ? kwRaw : kwRaw ? [kwRaw] : []
+                const matchedKw = kwList.find((it) => {
+                  const itNumId = String(it.contentid || '').replace(/\D/g, '')
+                  return (
+                    (cleanNumId && itNumId === cleanNumId) ||
+                    (it.title && it.title.trim() === item.title.trim())
+                  )
+                }) || kwList[0]
+
+                if (matchedKw) {
+                  const rawImage = (matchedKw.firstimage || matchedKw.firstimage2 || '').trim()
+                  if (rawImage.startsWith('http')) {
+                    const start = (matchedKw.eventstartdate || '').trim()
+                    const end = (matchedKw.eventenddate || start).trim()
+                    festivals.push({
+                      id: `tour_fest_${matchedKw.contentid || cleanNumId}`,
+                      title: matchedKw.title || item.title,
+                      date: formatFestivalDate(start, end),
+                      startDate: start,
+                      endDate: end,
+                      location: matchedKw.addr1 || matchedKw.addr2 || '상세 장소는 주최측 공지 참조',
+                      price: '무료 관람 (체험비 별도)',
+                      imageUrl: rawImage,
+                      poster: rawImage,
+                      tags: ['인기축제', 'HOT', '주간랭킹'],
+                      category: '축제/행사',
+                      description: `${matchedKw.addr1 || '현장'}에서 진행되는 "${matchedKw.title || item.title}".`,
+                      viewCount: Number(item.view_count) || 0,
+                    })
+                  }
+                }
+              }
+            } catch {
+              // ignore single fetch failure
+            }
+          }
+        }
       }
     }
   } catch (err) {

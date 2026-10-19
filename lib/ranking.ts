@@ -78,6 +78,84 @@ async function syncViewCountToSupabase(eventId: string, title: string): Promise<
   }
 }
 
+// 축제 마스터 풀 인메모리 캐시 (초기 로딩 및 탭 복귀 시 포스터 보존)
+let memoryCandidatePool: PoppleEvent[] = []
+
+/**
+ * 축제 포스터 이미지 캐시 저장
+ */
+export function recordPosterToCache(id: string, title?: string, imageUrl?: string): void {
+  if (typeof window === 'undefined' || !imageUrl) return
+  if (imageUrl.includes('rock-festival') || imageUrl.includes('jazz-picnic')) return
+  try {
+    const raw = localStorage.getItem('popple_festival_posters')
+    const cache: Record<string, string> = raw ? JSON.parse(raw) : {}
+    const cleanId = extractCleanId(id)
+    if (cleanId) cache[cleanId] = imageUrl
+    if (title) {
+      cache[title.trim().toLowerCase()] = imageUrl
+      cache[title.replace(/\s+/g, '').toLowerCase()] = imageUrl
+    }
+    localStorage.setItem('popple_festival_posters', JSON.stringify(cache))
+  } catch {
+    // ignore
+  }
+}
+
+/**
+ * 축제 포스터 이미지 캐시 조회
+ */
+export function getCachedPoster(id: string, title?: string): string | null {
+  if (typeof window === 'undefined') return null
+  try {
+    const raw = localStorage.getItem('popple_festival_posters')
+    if (!raw) return null
+    const cache: Record<string, string> = JSON.parse(raw)
+    const cleanId = extractCleanId(id)
+    if (cleanId && cache[cleanId]) return cache[cleanId]
+    if (title) {
+      const t1 = title.trim().toLowerCase()
+      const t2 = title.replace(/\s+/g, '').toLowerCase()
+      if (cache[t1]) return cache[t1]
+      if (cache[t2]) return cache[t2]
+    }
+    return null
+  } catch {
+    return null
+  }
+}
+
+/**
+ * 축제 마스터 풀(TourAPI)에서 ID 또는 제목으로 매칭 항목 탐색
+ */
+export function findMatchingEventInPool(
+  pool: PoppleEvent[],
+  cleanDbId: string,
+  dbTitle: string,
+  fullId: string,
+): PoppleEvent | undefined {
+  if (!pool || pool.length === 0) return undefined
+
+  const normDbTitle = dbTitle ? dbTitle.trim().toLowerCase() : ''
+  const spaceLessDbTitle = normDbTitle ? normDbTitle.replace(/\s+/g, '') : ''
+
+  return pool.find((ev) => {
+    const cleanItemId = extractCleanId(ev.id)
+    if (cleanItemId && cleanDbId && cleanItemId === cleanDbId) return true
+    if (ev.id === fullId) return true
+
+    if (normDbTitle && ev.title) {
+      const normEvTitle = ev.title.trim().toLowerCase()
+      const spaceLessEvTitle = normEvTitle.replace(/\s+/g, '')
+
+      if (normEvTitle === normDbTitle) return true
+      if (spaceLessEvTitle === spaceLessDbTitle) return true
+      if (normEvTitle.includes(normDbTitle) || normDbTitle.includes(normEvTitle)) return true
+    }
+    return false
+  })
+}
+
 /**
  * 사용자가 행사 상세페이지에 진입할 때 고유 ID와 시각을 로컬스토리지 및 Supabase DB에 기록
  */
@@ -86,8 +164,14 @@ export function recordEventClick(event: PoppleEvent): void {
   const eventId = getEventIdentifier(event)
   if (!eventId) return
   const title = event.title || ''
+  const imageUrl = event.imageUrl || event.poster || ''
 
-  // 1. 로컬 스토리지에 시각 로그 기록 (즉각적인 화면 반응성 보장)
+  // 1. 포스터 캐시 기록 (랭킹 카드 포스터 바인딩 보존)
+  if (imageUrl) {
+    recordPosterToCache(eventId, title, imageUrl)
+  }
+
+  // 2. 로컬 스토리지에 시각 로그 기록 (즉각적인 화면 반응성 보장)
   try {
     const raw = localStorage.getItem(STORAGE_KEY)
     const list: ClickLogEntry[] = raw ? JSON.parse(raw) : []
@@ -114,7 +198,7 @@ export function recordEventClick(event: PoppleEvent): void {
     console.warn('[ranking] Failed to record event click in localStorage:', err)
   }
 
-  // 2. Supabase DB 전역 조회수 증가 요청 비동기 전송
+  // 3. Supabase DB 전역 조회수 증가 요청 비동기 전송
   syncViewCountToSupabase(eventId, title).catch((err) => {
     console.warn('[ranking] Supabase sync error:', err)
   })
@@ -201,6 +285,17 @@ export async function fetchWeeklyTopFestivals(
     const sevenDaysAgoMs = now - 7 * 24 * 60 * 60 * 1000
     const sevenDaysAgoStr = new Date(sevenDaysAgoMs).toISOString().split('T')[0]
 
+    // 0. 축제 풀 캐시 동기화
+    if (Array.isArray(candidatePool) && candidatePool.length > 0) {
+      memoryCandidatePool = candidatePool
+      for (const ev of candidatePool) {
+        if (ev.imageUrl && !ev.imageUrl.includes('rock-festival') && !ev.imageUrl.includes('jazz-picnic')) {
+          recordPosterToCache(ev.id, ev.title, ev.imageUrl)
+        }
+      }
+    }
+    const pool = candidatePool.length > 0 ? candidatePool : memoryCandidatePool
+
     // 1. festival_daily_views 테이블에서 최근 7일간 데이터 조회
     const { data: dailyRows } = await supabase
       .from('festival_daily_views')
@@ -266,39 +361,43 @@ export async function fetchWeeklyTopFestivals(
     const result: PoppleEvent[] = []
     const usedKeys = new Set<string>()
 
-    // TourAPI 데이터 목록(candidatePool)과 id 및 제목 기준으로 매칭
+    // TourAPI 데이터 목록(pool)과 id 및 제목 기준으로 매칭하여 실제 포스터 바인딩
     for (const item of sortedDbItems) {
       const cleanDbId = extractCleanId(item.id)
       const dbTitle = item.record && typeof item.record.title === 'string'
         ? item.record.title.trim().toLowerCase()
         : ''
 
-      const matched = candidatePool.find((ev) => {
-        const cleanItemId = extractCleanId(ev.id)
-        if (cleanItemId && cleanDbId && cleanItemId === cleanDbId) return true
-        if (ev.id === item.id) return true
-        if (dbTitle && ev.title && ev.title.trim().toLowerCase() === dbTitle) return true
-        return false
-      })
+      const matched = findMatchingEventInPool(pool, cleanDbId, dbTitle, item.id)
 
       if (matched) {
         const key = matched.id
         if (!usedKeys.has(key)) {
           usedKeys.add(key)
+          if (matched.imageUrl) {
+            recordPosterToCache(matched.id, matched.title, matched.imageUrl)
+          }
           result.push({
             ...matched,
             viewCount: item.count,
           })
         }
       } else if (item.record) {
+        const cachedPoster = getCachedPoster(item.id, dbTitle)
+        const realPoster =
+          cachedPoster ||
+          (item.record.imageUrl as string) ||
+          (item.record.poster as string) ||
+          '/events/rock-festival.png'
+
         const fallbackEvent: PoppleEvent = {
           id: String(item.id),
           title: (item.record.title as string) || '인기 축제',
           date: (item.record.date as string) || '진행 중',
           location: (item.record.location as string) || '전국',
           price: (item.record.price as string) || '무료',
-          imageUrl: (item.record.imageUrl as string) || (item.record.poster as string) || '/events/rock-festival.png',
-          poster: (item.record.poster as string) || (item.record.imageUrl as string) || '/events/rock-festival.png',
+          imageUrl: realPoster,
+          poster: realPoster,
           tags: ['인기축제', 'HOT', '주간랭킹'],
           category: '축제/행사',
           description: (item.record.description as string) || `${item.record.title || '인기 축제'} 상세 정보`,
@@ -312,9 +411,9 @@ export async function fetchWeeklyTopFestivals(
       }
     }
 
-    // limit까지 부족한 슬롯은 실제 TourAPI 데이터(candidatePool)의 축제로 순차 보충
-    if (result.length < limit && candidatePool.length > 0) {
-      for (const item of candidatePool) {
+    // limit까지 부족한 슬롯은 실제 TourAPI 데이터(pool)의 축제로 순차 보충
+    if (result.length < limit && pool.length > 0) {
+      for (const item of pool) {
         if (result.length >= limit) break
         const cleanItemId = extractCleanId(item.id)
         const isAlreadyAdded = result.some(
@@ -349,6 +448,17 @@ export async function fetchDailyLiveFestivals(
     const now = new Date()
     const todayMidnight = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime()
     const todayIsoDate = now.toISOString().split('T')[0] // YYYY-MM-DD
+
+    // 0. 축제 풀 캐시 동기화
+    if (Array.isArray(candidatePool) && candidatePool.length > 0) {
+      memoryCandidatePool = candidatePool
+      for (const ev of candidatePool) {
+        if (ev.imageUrl && !ev.imageUrl.includes('rock-festival') && !ev.imageUrl.includes('jazz-picnic')) {
+          recordPosterToCache(ev.id, ev.title, ev.imageUrl)
+        }
+      }
+    }
+    const pool = candidatePool.length > 0 ? candidatePool : memoryCandidatePool
 
     // 1. festival_daily_views 테이블에서 오늘 날짜 데이터 조회
     const { data: todayDailyRows } = await supabase
@@ -418,32 +528,36 @@ export async function fetchDailyLiveFestivals(
         ? item.record.title.trim().toLowerCase()
         : ''
 
-      const matched = candidatePool.find((ev) => {
-        const cleanItemId = extractCleanId(ev.id)
-        if (cleanItemId && cleanDbId && cleanItemId === cleanDbId) return true
-        if (ev.id === item.id) return true
-        if (dbTitle && ev.title && ev.title.trim().toLowerCase() === dbTitle) return true
-        return false
-      })
+      const matched = findMatchingEventInPool(pool, cleanDbId, dbTitle, item.id)
 
       if (matched) {
         const key = matched.id
         if (!usedKeys.has(key)) {
           usedKeys.add(key)
+          if (matched.imageUrl) {
+            recordPosterToCache(matched.id, matched.title, matched.imageUrl)
+          }
           result.push({
             ...matched,
             viewCount: item.count,
           })
         }
       } else if (item.record) {
+        const cachedPoster = getCachedPoster(item.id, dbTitle)
+        const realPoster =
+          cachedPoster ||
+          (item.record.imageUrl as string) ||
+          (item.record.poster as string) ||
+          '/events/jazz-picnic.png'
+
         const fallbackEvent: PoppleEvent = {
           id: String(item.id),
           title: (item.record.title as string) || '인기 축제',
           date: (item.record.date as string) || '진행 중',
           location: (item.record.location as string) || '전국',
           price: (item.record.price as string) || '무료',
-          imageUrl: (item.record.imageUrl as string) || (item.record.poster as string) || '/events/jazz-picnic.png',
-          poster: (item.record.poster as string) || (item.record.imageUrl as string) || '/events/jazz-picnic.png',
+          imageUrl: realPoster,
+          poster: realPoster,
           tags: ['실시간인기', '급상승'],
           category: '축제/행사',
           description: (item.record.description as string) || `${item.record.title || '인기 축제'} 상세 정보`,
@@ -457,9 +571,9 @@ export async function fetchDailyLiveFestivals(
       }
     }
 
-    // 부족한 경우 candidatePool(실제 TourAPI)의 축제로 보완
-    if (result.length < limit && candidatePool.length > 0) {
-      for (const item of candidatePool) {
+    // 부족한 경우 pool(실제 TourAPI)의 축제로 보완
+    if (result.length < limit && pool.length > 0) {
+      for (const item of pool) {
         if (result.length >= limit) break
         const cleanItemId = extractCleanId(item.id)
         const isAlreadyAdded = result.some(

@@ -609,7 +609,7 @@ export function HomeScreen({
                         className="group relative h-full w-full shrink-0 cursor-pointer overflow-hidden transition-transform active:scale-[0.99]"
                       >
                         <Image
-                          src={ev.imageUrl || '/events/rock-festival.png'}
+                          src={ev.imageUrl || ev.poster || '/events/rock-festival.png'}
                           alt={ev.title}
                           fill
                           priority={idx === 0}
@@ -741,7 +741,7 @@ export function HomeScreen({
                   >
                     <div className="relative aspect-[4/3] w-full bg-slate-100">
                       <Image
-                        src={ev.imageUrl || '/events/jazz-picnic.png'}
+                        src={ev.imageUrl || ev.poster || '/events/jazz-picnic.png'}
                         alt={ev.title}
                         fill
                         unoptimized

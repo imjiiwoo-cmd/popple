@@ -236,7 +236,7 @@ export function RankingScreen() {
                   {/* 좌측 썸네일 & 순위 배지 */}
                   <div className="relative size-24 shrink-0 rounded-xl overflow-hidden bg-slate-100">
                     <Image
-                      src={ev.imageUrl || '/events/rock-festival.png'}
+                      src={ev.imageUrl || ev.poster || '/events/rock-festival.png'}
                       alt={ev.title}
                       fill
                       unoptimized
