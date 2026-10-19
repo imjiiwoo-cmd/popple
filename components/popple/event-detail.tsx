@@ -28,6 +28,7 @@ import {
   compressImageFileToBase64,
   type CommunityPost,
 } from '@/lib/community'
+import { recordEventClick } from '@/lib/ranking'
 
 interface EventDetailProps {
   event: PoppleEvent
@@ -70,6 +71,9 @@ export function EventDetail({ event, onBack }: EventDetailProps) {
         containerRef.current.scrollTop = 0
       }
     })
+
+    // 상세 페이지 진입 시 조회수 증가 (로컬 및 Supabase DB 연동)
+    recordEventClick(event)
 
     return () => cancelAnimationFrame(rafId)
   }, [event.id])

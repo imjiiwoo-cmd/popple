@@ -23,6 +23,7 @@ import {
   recordEventClick,
   computeWeeklyRanking,
   computeLiveNowRanking,
+  fetchGlobalViewCounts,
 } from '@/lib/ranking'
 import {
   type ThemeDefinition,
@@ -65,6 +66,7 @@ export function HomeScreen({
 
   // 축제 풀 및 랭킹 상태
   const [allFestivals, setAllFestivals] = useState<PoppleEvent[]>(MOCK_EVENTS)
+  const [globalCounts, setGlobalCounts] = useState<Record<string, number>>({})
   const [weeklyTopEvents, setWeeklyTopEvents] = useState<PoppleEvent[]>(() =>
     computeWeeklyRanking(MOCK_EVENTS, 5),
   )
@@ -76,18 +78,24 @@ export function HomeScreen({
   const [currentSlideIndex, setCurrentSlideIndex] = useState(0)
   const [isPaused, setIsPaused] = useState(false)
 
-  // 1. 실시간 축제 풀(/api/festivals) 로드 및 랭킹 산정
+  // 1. 실시간 축제 풀(/api/festivals) 로드 및 랭킹 산정 (캐시 무효화 및 Supabase 실시간 조회수 반영)
   useEffect(() => {
     let isMounted = true
     async function loadFestivals() {
       try {
-        const res = await fetch('/api/festivals')
+        const [res, viewCounts] = await Promise.all([
+          fetch('/api/festivals', { cache: 'no-store' }),
+          fetchGlobalViewCounts(),
+        ])
+        if (isMounted && viewCounts) {
+          setGlobalCounts(viewCounts)
+        }
         if (res.ok) {
           const data = await res.json()
           if (isMounted && Array.isArray(data.festivals) && data.festivals.length > 0) {
             setAllFestivals(data.festivals)
-            setWeeklyTopEvents(computeWeeklyRanking(data.festivals, 5))
-            setLiveTrendingEvents(computeLiveNowRanking(data.festivals, 5))
+            setWeeklyTopEvents(computeWeeklyRanking(data.festivals, 5, viewCounts))
+            setLiveTrendingEvents(computeLiveNowRanking(data.festivals, 5, viewCounts))
             return
           }
         }
@@ -108,15 +116,19 @@ export function HomeScreen({
 
   // 2. 다른 탭이나 상세에서 클릭 후 복귀 시 최신 랭킹 반영
   useEffect(() => {
-    const syncRanking = () => {
-      setWeeklyTopEvents(computeWeeklyRanking(allFestivals, 5))
-      setLiveTrendingEvents(computeLiveNowRanking(allFestivals, 5))
+    const syncRanking = async () => {
+      const counts = await fetchGlobalViewCounts()
+      setGlobalCounts(counts)
+      setWeeklyTopEvents(computeWeeklyRanking(allFestivals, 5, counts))
+      setLiveTrendingEvents(computeLiveNowRanking(allFestivals, 5, counts))
     }
     window.addEventListener('storage', syncRanking)
     window.addEventListener('focus', syncRanking)
+    window.addEventListener('popple-event-clicked', syncRanking)
     return () => {
       window.removeEventListener('storage', syncRanking)
       window.removeEventListener('focus', syncRanking)
+      window.removeEventListener('popple-event-clicked', syncRanking)
     }
   }, [allFestivals])
 

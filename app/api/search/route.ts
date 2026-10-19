@@ -1,5 +1,7 @@
 import type { PoppleEvent } from '@/lib/events'
 
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
 export const maxDuration = 30
 
 /**

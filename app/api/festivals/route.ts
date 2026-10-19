@@ -1,10 +1,14 @@
 import type { PoppleEvent } from '@/lib/events'
+import { supabase } from '@/lib/supabaseClient'
 
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
 export const maxDuration = 30
 
 export interface CalendarFestival extends PoppleEvent {
   startDate: string // YYYYMMDD
   endDate: string // YYYYMMDD
+  viewCount?: number
 }
 
 function parseMockDate(dateStr: string): { startDate: string; endDate: string } {
@@ -159,6 +163,25 @@ export async function GET(request: Request) {
     return a.endDate.localeCompare(b.endDate)
   })
 
-  // 실제 TourAPI 데이터만 반환 (하드코딩된 가짜 축제 더미 데이터 및 종료된 행사 제외)
+  // 3. Supabase festivals 테이블의 실시간 누적 조회수(view_count) 매핑
+  try {
+    const { data: viewData } = await supabase
+      .from('festivals')
+      .select('id, view_count')
+
+    if (Array.isArray(viewData) && viewData.length > 0) {
+      const viewMap = new Map<string, number>(
+        viewData.map((v) => [String(v.id), Number(v.view_count) || 0]),
+      )
+      for (const f of festivals) {
+        const rawId = f.id.replace(/^tour_fest_|^festival_/, '')
+        f.viewCount = viewMap.get(f.id) || viewMap.get(rawId) || 0
+      }
+    }
+  } catch (err) {
+    console.warn('[popple-festivals] Failed to load view counts from Supabase:', err)
+  }
+
+  // 실제 TourAPI 데이터 및 실시간 전역 조회수 반환
   return Response.json({ festivals })
 }
