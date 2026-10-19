@@ -57,6 +57,8 @@ export function HomeScreen({
   const [searchResults, setSearchResults] = useState<PoppleEvent[]>([])
   const [isSearching, setIsSearching] = useState(false)
   const [isSearchActive, setIsSearchActive] = useState(false)
+  const [searchThemeSummary, setSearchThemeSummary] = useState<string | null>(null)
+  const [searchThemeName, setSearchThemeName] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState<'home' | 'events' | 'community' | 'my'>('home')
   const [showScrollTop, setShowScrollTop] = useState(false)
 
@@ -229,11 +231,17 @@ export function HomeScreen({
           return true
         })
         setSearchResults(activeOnly)
+        setSearchThemeSummary(data.themeSummary || null)
+        setSearchThemeName(data.themeName || null)
       } else {
         setSearchResults([])
+        setSearchThemeSummary(null)
+        setSearchThemeName(null)
       }
     } catch {
       setSearchResults([])
+      setSearchThemeSummary(null)
+      setSearchThemeName(null)
     } finally {
       setIsSearching(false)
     }
@@ -244,6 +252,8 @@ export function HomeScreen({
     setSearchQuery('')
     setIsSearchActive(false)
     setSearchResults([])
+    setSearchThemeSummary(null)
+    setSearchThemeName(null)
     setActiveTheme(null)
     setThemeEvents([])
   }
@@ -455,14 +465,22 @@ export function HomeScreen({
             <div className="flex items-center justify-between">
               <div>
                 <span className="text-[11px] font-bold text-[#1884F7] tracking-wider uppercase">
-                  SEARCH RESULT
+                  {searchThemeName ? `${searchThemeName} 테마 추천` : 'SEARCH RESULT'}
                 </span>
                 <h2 className="text-lg font-black text-slate-900">
-                  &lsquo;{searchQuery}&rsquo;에 대한 행사 결과{' '}
+                  &lsquo;{searchQuery}&rsquo; 추천 행사{' '}
                   <span className="text-sm font-semibold text-slate-500">
                     ({searchResults.length}건)
                   </span>
                 </h2>
+                {searchThemeSummary && (
+                  <p className="text-xs text-slate-500 font-medium mt-1 flex items-center gap-1.5 flex-wrap">
+                    <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-sky-50 text-[#1884F7] text-[10px] font-bold border border-sky-100">
+                      💡 맞춤 테마
+                    </span>
+                    <span>{searchThemeSummary}</span>
+                  </p>
+                )}
               </div>
               <button
                 type="button"
