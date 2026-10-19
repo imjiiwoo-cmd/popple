@@ -11,7 +11,7 @@ export async function GET() {
   try {
     const { data, error } = await supabase
       .from('festivals')
-      .select('id, view_count')
+      .select('id, title, view_count')
 
     if (error) {
       return Response.json({ counts: {} })
@@ -21,9 +21,20 @@ export async function GET() {
     if (Array.isArray(data)) {
       for (const row of data) {
         if (row.id) {
-          counts[String(row.id)] = Number(row.view_count) || 0
-          counts[`tour_fest_${row.id}`] = Number(row.view_count) || 0
-          counts[`festival_${row.id}`] = Number(row.view_count) || 0
+          const c = Number(row.view_count) || 0
+          const rawId = String(row.id)
+          const numId = rawId.replace(/\D/g, '')
+
+          counts[rawId] = c
+          if (numId) {
+            counts[numId] = c
+            counts[`tour_fest_${numId}`] = c
+            counts[`tour_${numId}`] = c
+            counts[`festival_${numId}`] = c
+          }
+          if (row.title) {
+            counts[String(row.title).trim().toLowerCase()] = c
+          }
         }
       }
     }

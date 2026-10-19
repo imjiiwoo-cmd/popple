@@ -1,5 +1,4 @@
 import type { PoppleEvent } from './events'
-import { MOCK_EVENTS } from './events'
 import { supabase } from './supabaseClient'
 
 export interface ClickLogEntry {
@@ -10,6 +9,16 @@ export interface ClickLogEntry {
 }
 
 const STORAGE_KEY = 'popple_event_clicks'
+
+/**
+ * ID에서 접두사(tour_fest_, festival_, tour_)를 정리하고 순수 식별자/숫자를 추출
+ */
+export function extractCleanId(id: string | number | undefined | null): string {
+  if (!id) return ''
+  const s = String(id).trim()
+  const m = s.match(/\d+/)
+  return m ? m[0] : s.replace(/^tour_fest_|^festival_|^tour_/, '')
+}
 
 function getEventIdentifier(event: PoppleEvent): string {
   return String((event as unknown as { contentid?: string }).contentid || event.id || '')
@@ -134,16 +143,26 @@ export async function fetchGlobalViewCounts(): Promise<Record<string, number>> {
   try {
     const { data, error } = await supabase
       .from('festivals')
-      .select('id, view_count')
+      .select('id, title, view_count')
 
     if (!error && Array.isArray(data) && data.length > 0) {
       const counts: Record<string, number> = {}
       for (const row of data) {
         if (row.id) {
           const c = Number(row.view_count) || 0
-          counts[String(row.id)] = c
-          counts[`tour_fest_${row.id}`] = c
-          counts[`festival_${row.id}`] = c
+          const rawId = String(row.id)
+          const numId = rawId.replace(/\D/g, '')
+
+          counts[rawId] = c
+          if (numId) {
+            counts[numId] = c
+            counts[`tour_fest_${numId}`] = c
+            counts[`tour_${numId}`] = c
+            counts[`festival_${numId}`] = c
+          }
+          if (row.title) {
+            counts[String(row.title).trim().toLowerCase()] = c
+          }
         }
       }
       return counts
@@ -169,16 +188,110 @@ export async function fetchGlobalViewCounts(): Promise<Record<string, number>> {
 }
 
 /**
- * '이번 주 가장 핫한 축제' 랭킹 산출
- * - Supabase 전역 누적 조회수 및 최근 7일 내 기록된 클릭 횟수 기준 상위 N개 추출
- * - 클릭 기록이 부족할 경우 전체 풀에서 최신순/진행순으로 채움 (안전한 폴백)
+ * [Supabase 실시간 연동] 주간 랭킹(이번 주 가장 핫한 축제) 산출
+ * - Supabase의 `festivals` 테이블에서 `view_count`가 가장 높은 순서대로 데이터를 가져와서
+ * - TourAPI 데이터 목록(candidatePool)과 id/title 기준으로 매칭하여 1위, 2위, 3위 ... 카드로 바인딩
+ */
+export async function fetchWeeklyTopFestivals(
+  candidatePool: PoppleEvent[] = [],
+  limit = 5,
+): Promise<PoppleEvent[]> {
+  try {
+    const { data: topFestivals, error } = await supabase
+      .from('festivals')
+      .select('*')
+      .order('view_count', { ascending: false })
+      .limit(limit)
+
+    if (error) {
+      console.warn('[ranking] Supabase top festivals query failed:', error)
+      return computeWeeklyRanking(candidatePool, limit)
+    }
+
+    const result: PoppleEvent[] = []
+    const usedKeys = new Set<string>()
+
+    // 1. Supabase view_count 내림차순 결과를 1위부터 순서대로 매칭
+    if (Array.isArray(topFestivals) && topFestivals.length > 0) {
+      for (const record of topFestivals) {
+        const cleanDbId = extractCleanId(record.id)
+        const dbTitle = (record.title || '').trim().toLowerCase()
+
+        // candidatePool(TourAPI)에서 ID 또는 제목으로 매칭
+        const matched = candidatePool.find((item) => {
+          const cleanItemId = extractCleanId(item.id)
+          if (cleanItemId && cleanDbId && cleanItemId === cleanDbId) return true
+          if (item.id === record.id) return true
+          if (item.title && dbTitle && item.title.trim().toLowerCase() === dbTitle) return true
+          return false
+        })
+
+        if (matched) {
+          const key = matched.id
+          if (!usedKeys.has(key)) {
+            usedKeys.add(key)
+            result.push({
+              ...matched,
+              viewCount: Number(record.view_count) || 0,
+            })
+          }
+        } else if (record.id) {
+          // TourAPI 목록에 아직 로드되지 않은 축제라도 Supabase 레코드 자체로 유효한 카드 구성
+          const fallbackEvent: PoppleEvent = {
+            id: String(record.id),
+            title: record.title || '인기 축제',
+            date: record.date || '진행 중',
+            location: record.location || '전국',
+            price: record.price || '무료',
+            imageUrl: record.imageUrl || record.poster || '/events/rock-festival.png',
+            poster: record.poster || record.imageUrl || '/events/rock-festival.png',
+            tags: ['인기축제', 'HOT', '주간랭킹'],
+            category: '축제/행사',
+            description: record.description || `${record.title || '인기 축제'} 상세 정보`,
+            viewCount: Number(record.view_count) || 0,
+          }
+          const key = fallbackEvent.id
+          if (!usedKeys.has(key)) {
+            usedKeys.add(key)
+            result.push(fallbackEvent)
+          }
+        }
+      }
+    }
+
+    // 2. 5위까지 부족한 슬롯은 실제 TourAPI 데이터(candidatePool)의 축제로 순차 보충 (더미/목업 배제)
+    if (result.length < limit && candidatePool.length > 0) {
+      for (const item of candidatePool) {
+        if (result.length >= limit) break
+        const cleanItemId = extractCleanId(item.id)
+        const isAlreadyAdded = result.some(
+          (r) =>
+            r.id === item.id ||
+            (cleanItemId && extractCleanId(r.id) === cleanItemId) ||
+            (r.title && item.title && r.title.trim().toLowerCase() === item.title.trim().toLowerCase()),
+        )
+        if (!isAlreadyAdded) {
+          result.push(item)
+        }
+      }
+    }
+
+    return result.slice(0, limit)
+  } catch (err) {
+    console.warn('[ranking] fetchWeeklyTopFestivals error:', err)
+    return computeWeeklyRanking(candidatePool, limit)
+  }
+}
+
+/**
+ * '이번 주 가장 핫한 축제' 랭킹 산출 (동기 연산/로컬 클릭 가중치 폴백)
  */
 export function computeWeeklyRanking(
   candidatePool: PoppleEvent[],
   limit = 5,
   globalCounts?: Record<string, number>,
 ): PoppleEvent[] {
-  const pool = candidatePool && candidatePool.length > 0 ? candidatePool : MOCK_EVENTS
+  const pool = candidatePool && candidatePool.length > 0 ? candidatePool : []
   const logs = getEventClickLogs()
   const now = Date.now()
   const sevenDaysAgo = now - 7 * 24 * 60 * 60 * 1000
@@ -195,6 +308,8 @@ export function computeWeeklyRanking(
   for (const log of logs) {
     if (log.timestamp >= sevenDaysAgo) {
       counts[log.id] = (counts[log.id] || 0) + 1
+      const numId = String(log.id).replace(/\D/g, '')
+      if (numId) counts[numId] = (counts[numId] || 0) + 1
     }
   }
 
@@ -204,15 +319,19 @@ export function computeWeeklyRanking(
 
   for (const event of pool) {
     const ident = getEventIdentifier(event)
-    const rawId = ident.replace(/^tour_fest_|^festival_/, '')
+    const rawId = ident.replace(/^tour_fest_|^festival_|^tour_/, '')
+    const numId = ident.replace(/\D/g, '')
+    const titleKey = (event.title || '').trim().toLowerCase()
     const count =
       counts[ident] ||
       counts[event.id] ||
       counts[rawId] ||
+      (numId ? counts[numId] : 0) ||
+      counts[titleKey] ||
       ((event as unknown as { viewCount?: number }).viewCount ?? 0)
 
     if (count > 0) {
-      clickedFestivals.push({ event, count })
+      clickedFestivals.push({ event: { ...event, viewCount: count }, count })
     } else {
       unclickedFestivals.push(event)
     }
@@ -223,23 +342,12 @@ export function computeWeeklyRanking(
 
   const result: PoppleEvent[] = clickedFestivals.map((c) => c.event)
 
-  // 3. 기록이 부족할 경우 unclickedFestivals로 채움 (진행순/최신순 유지)
+  // 3. 기록이 부족할 경우 unclickedFestivals로 채움
   for (const event of unclickedFestivals) {
     if (result.length >= limit) break
     const ident = getEventIdentifier(event)
     if (!result.some((r) => getEventIdentifier(r) === ident)) {
       result.push(event)
-    }
-  }
-
-  // 4. 그래도 부족한 경우 MOCK_EVENTS에서 보충
-  if (result.length < limit) {
-    for (const mock of MOCK_EVENTS) {
-      if (result.length >= limit) break
-      const ident = getEventIdentifier(mock)
-      if (!result.some((r) => getEventIdentifier(r) === ident)) {
-        result.push(mock)
-      }
     }
   }
 
@@ -254,7 +362,7 @@ export function computeLiveNowRanking(
   limit = 5,
   globalCounts?: Record<string, number>,
 ): PoppleEvent[] {
-  const pool = candidatePool && candidatePool.length > 0 ? candidatePool : MOCK_EVENTS
+  const pool = candidatePool && candidatePool.length > 0 ? candidatePool : []
   const logs = getEventClickLogs()
 
   const now = new Date()
@@ -272,6 +380,8 @@ export function computeLiveNowRanking(
   for (const log of logs) {
     if (log.timestamp >= todayMidnight) {
       counts[log.id] = (counts[log.id] || 0) + 1
+      const numId = String(log.id).replace(/\D/g, '')
+      if (numId) counts[numId] = (counts[numId] || 0) + 1
     }
   }
 
@@ -281,15 +391,19 @@ export function computeLiveNowRanking(
 
   for (const event of pool) {
     const ident = getEventIdentifier(event)
-    const rawId = ident.replace(/^tour_fest_|^festival_/, '')
+    const rawId = ident.replace(/^tour_fest_|^festival_|^tour_/, '')
+    const numId = ident.replace(/\D/g, '')
+    const titleKey = (event.title || '').trim().toLowerCase()
     const count =
       counts[ident] ||
       counts[event.id] ||
       counts[rawId] ||
+      (numId ? counts[numId] : 0) ||
+      counts[titleKey] ||
       ((event as unknown as { viewCount?: number }).viewCount ?? 0)
 
     if (count > 0) {
-      clickedFestivals.push({ event, count })
+      clickedFestivals.push({ event: { ...event, viewCount: count }, count })
     } else {
       unclickedFestivals.push(event)
     }
@@ -307,15 +421,6 @@ export function computeLiveNowRanking(
     }
   }
 
-  if (result.length < limit) {
-    for (const mock of MOCK_EVENTS) {
-      if (result.length >= limit) break
-      const ident = getEventIdentifier(mock)
-      if (!result.some((r) => getEventIdentifier(r) === ident)) {
-        result.push(mock)
-      }
-    }
-  }
-
   return result.slice(0, limit)
 }
+

@@ -18,12 +18,12 @@ import {
   ArrowRight,
 } from 'lucide-react'
 import type { PoppleEvent } from '@/lib/events'
-import { MOCK_EVENTS } from '@/lib/events'
 import {
   recordEventClick,
   computeWeeklyRanking,
   computeLiveNowRanking,
   fetchGlobalViewCounts,
+  fetchWeeklyTopFestivals,
 } from '@/lib/ranking'
 import {
   type ThemeDefinition,
@@ -64,21 +64,17 @@ export function HomeScreen({
   const [activeTheme, setActiveTheme] = useState<ThemeDefinition | null>(null)
   const [themeEvents, setThemeEvents] = useState<PoppleEvent[]>([])
 
-  // 축제 풀 및 랭킹 상태
-  const [allFestivals, setAllFestivals] = useState<PoppleEvent[]>(MOCK_EVENTS)
+  // 축제 풀 및 랭킹 상태 (Supabase festivals 테이블 view_count 실시간 연동)
+  const [allFestivals, setAllFestivals] = useState<PoppleEvent[]>([])
   const [globalCounts, setGlobalCounts] = useState<Record<string, number>>({})
-  const [weeklyTopEvents, setWeeklyTopEvents] = useState<PoppleEvent[]>(() =>
-    computeWeeklyRanking(MOCK_EVENTS, 5),
-  )
-  const [liveTrendingEvents, setLiveTrendingEvents] = useState<PoppleEvent[]>(() =>
-    computeLiveNowRanking(MOCK_EVENTS, 5),
-  )
+  const [weeklyTopEvents, setWeeklyTopEvents] = useState<PoppleEvent[]>([])
+  const [liveTrendingEvents, setLiveTrendingEvents] = useState<PoppleEvent[]>([])
 
   // 메인 슬라이더 롤링 & 호버 일시정지 상태
   const [currentSlideIndex, setCurrentSlideIndex] = useState(0)
   const [isPaused, setIsPaused] = useState(false)
 
-  // 1. 실시간 축제 풀(/api/festivals) 로드 및 랭킹 산정 (캐시 무효화 및 Supabase 실시간 조회수 반영)
+  // 1. 실시간 축제 풀(/api/festivals) 및 Supabase festivals 테이블 view_count 랭킹 1,2,3위 바인딩
   useEffect(() => {
     let isMounted = true
     async function loadFestivals() {
@@ -90,21 +86,30 @@ export function HomeScreen({
         if (isMounted && viewCounts) {
           setGlobalCounts(viewCounts)
         }
+
+        let festivalsList: PoppleEvent[] = []
         if (res.ok) {
           const data = await res.json()
-          if (isMounted && Array.isArray(data.festivals) && data.festivals.length > 0) {
-            setAllFestivals(data.festivals)
-            setWeeklyTopEvents(computeWeeklyRanking(data.festivals, 5, viewCounts))
-            setLiveTrendingEvents(computeLiveNowRanking(data.festivals, 5, viewCounts))
-            return
+          if (Array.isArray(data.festivals) && data.festivals.length > 0) {
+            festivalsList = data.festivals
+            if (isMounted) {
+              setAllFestivals(data.festivals)
+            }
           }
+        }
+
+        // Supabase festivals 테이블에서 view_count 기준 상위 5개를 조회하여 TourAPI와 결합 (1위, 2위, 3위 바인딩)
+        const topFestivals = await fetchWeeklyTopFestivals(festivalsList, 5)
+        if (isMounted) {
+          setWeeklyTopEvents(topFestivals)
+          setLiveTrendingEvents(computeLiveNowRanking(festivalsList, 5, viewCounts))
         }
       } catch (err) {
         console.warn('[HomeScreen] festivals fetch error:', err)
-      }
-      if (isMounted) {
-        setWeeklyTopEvents(computeWeeklyRanking(MOCK_EVENTS, 5))
-        setLiveTrendingEvents(computeLiveNowRanking(MOCK_EVENTS, 5))
+        if (isMounted) {
+          const fallbackTop = await fetchWeeklyTopFestivals([], 5)
+          setWeeklyTopEvents(fallbackTop)
+        }
       }
     }
 
@@ -114,13 +119,20 @@ export function HomeScreen({
     }
   }, [])
 
-  // 2. 다른 탭이나 상세에서 클릭 후 복귀 시 최신 랭킹 반영
+  // 2. 다른 탭이나 상세에서 클릭 후 복귀 시 최신 Supabase 랭킹 즉시 동기화
   useEffect(() => {
     const syncRanking = async () => {
-      const counts = await fetchGlobalViewCounts()
-      setGlobalCounts(counts)
-      setWeeklyTopEvents(computeWeeklyRanking(allFestivals, 5, counts))
-      setLiveTrendingEvents(computeLiveNowRanking(allFestivals, 5, counts))
+      try {
+        const [counts, topFestivals] = await Promise.all([
+          fetchGlobalViewCounts(),
+          fetchWeeklyTopFestivals(allFestivals, 5),
+        ])
+        setGlobalCounts(counts)
+        setWeeklyTopEvents(topFestivals)
+        setLiveTrendingEvents(computeLiveNowRanking(allFestivals, 5, counts))
+      } catch (err) {
+        console.warn('[HomeScreen] syncRanking error:', err)
+      }
     }
     window.addEventListener('storage', syncRanking)
     window.addEventListener('focus', syncRanking)
@@ -555,86 +567,104 @@ export function HomeScreen({
 
               {/* 1. [캐러셀 자동 롤링 및 호버 일시정지 (Autoplay with Pause on Hover)] */}
               {/* 3.5초 간격으로 자동 롤링, 호버 및 모바일 터치 시 일시정지, 마지막 도달 시 순환(Loop) */}
-              <div
-                className="relative aspect-[16/11] w-full rounded-3xl overflow-hidden shadow-md select-none bg-slate-900"
-                onMouseEnter={() => setIsPaused(true)}
-                onMouseLeave={() => setIsPaused(false)}
-                onTouchStart={() => setIsPaused(true)}
-                onTouchEnd={() => setIsPaused(false)}
-              >
+              {weeklyTopEvents.length === 0 ? (
+                <div className="relative aspect-[16/11] w-full rounded-3xl overflow-hidden bg-slate-900/90 animate-pulse flex items-center justify-center border border-slate-800">
+                  <div className="flex flex-col items-center gap-2">
+                    <span className="size-6 border-2 border-[#1884F7] border-t-transparent rounded-full animate-spin" />
+                    <p className="text-xs font-semibold text-slate-300">실시간 주간 랭킹 로딩 중...</p>
+                  </div>
+                </div>
+              ) : (
                 <div
-                  className="flex h-full w-full transition-transform duration-500 ease-out"
-                  style={{ transform: `translateX(-${currentSlideIndex * 100}%)` }}
+                  className="relative aspect-[16/11] w-full rounded-3xl overflow-hidden shadow-md select-none bg-slate-900"
+                  onMouseEnter={() => setIsPaused(true)}
+                  onMouseLeave={() => setIsPaused(false)}
+                  onTouchStart={() => setIsPaused(true)}
+                  onTouchEnd={() => setIsPaused(false)}
                 >
-                  {weeklyTopEvents.map((ev, idx) => (
-                    <div
-                      key={ev.id || idx}
-                      onClick={() => {
-                        recordEventClick(ev)
-                        onSelectEvent(ev)
-                      }}
-                      role="button"
-                      tabIndex={0}
-                      className="group relative h-full w-full shrink-0 cursor-pointer overflow-hidden transition-transform active:scale-[0.99]"
-                    >
-                      <Image
-                        src={ev.imageUrl || '/events/rock-festival.png'}
-                        alt={ev.title}
-                        fill
-                        priority={idx === 0}
-                        unoptimized
-                        className="object-cover transition-transform duration-500 group-hover:scale-105"
-                      />
+                  <div
+                    className="flex h-full w-full transition-transform duration-500 ease-out"
+                    style={{ transform: `translateX(-${currentSlideIndex * 100}%)` }}
+                  >
+                    {weeklyTopEvents.map((ev, idx) => (
+                      <div
+                        key={ev.id || idx}
+                        onClick={() => {
+                          recordEventClick(ev)
+                          onSelectEvent(ev)
+                        }}
+                        role="button"
+                        tabIndex={0}
+                        className="group relative h-full w-full shrink-0 cursor-pointer overflow-hidden transition-transform active:scale-[0.99]"
+                      >
+                        <Image
+                          src={ev.imageUrl || '/events/rock-festival.png'}
+                          alt={ev.title}
+                          fill
+                          priority={idx === 0}
+                          unoptimized
+                          className="object-cover transition-transform duration-500 group-hover:scale-105"
+                        />
 
-                      {/* 그라디언트 오버레이 */}
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/35 to-transparent" />
+                        {/* 그라디언트 오버레이 */}
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/35 to-transparent" />
 
-                      {/* 좌측 상단 HOT 배지 */}
-                      <div className="absolute top-0 left-0">
-                        <span className="inline-block bg-[#1884F7] text-white text-[11px] font-black tracking-widest px-3.5 py-1 rounded-br-2xl uppercase shadow-md">
-                          HOT
-                        </span>
-                      </div>
-
-                      {/* 카드 하단 텍스트 정보 */}
-                      <div className="absolute bottom-4 left-4 right-4 flex items-end justify-between">
-                        <div className="flex items-end gap-3 min-w-0">
-                          <span className="text-5xl font-black text-white/95 leading-none tracking-tighter shrink-0">
-                            {String(idx + 1).padStart(2, '0')}
+                        {/* 좌측 상단 HOT 배지 */}
+                        <div className="absolute top-0 left-0">
+                          <span className="inline-block bg-[#1884F7] text-white text-[11px] font-black tracking-widest px-3.5 py-1 rounded-br-2xl uppercase shadow-md">
+                            HOT
                           </span>
-                          <div className="min-w-0 pb-0.5">
-                            <p className="text-xs font-medium text-slate-200 line-clamp-1 mb-1">
-                              {ev.location}
-                            </p>
-                            <h3 className="text-xl font-black text-white leading-tight line-clamp-1">
-                              {ev.title}
-                            </h3>
-                            <div className="mt-2 inline-flex items-center rounded-md bg-slate-900/75 backdrop-blur-xs px-2.5 py-1 text-[11px] font-semibold text-white border border-white/20">
-                              {ev.date}
+                        </div>
+
+                        {/* 카드 하단 텍스트 정보 */}
+                        <div className="absolute bottom-4 left-4 right-4 flex items-end justify-between">
+                          <div className="flex items-end gap-3 min-w-0">
+                            <span className="text-5xl font-black text-white/95 leading-none tracking-tighter shrink-0">
+                              {String(idx + 1).padStart(2, '0')}
+                            </span>
+                            <div className="min-w-0 pb-0.5">
+                              <p className="text-xs font-medium text-slate-200 line-clamp-1 mb-1">
+                                {ev.location}
+                              </p>
+                              <h3 className="text-xl font-black text-white leading-tight line-clamp-1">
+                                {ev.title}
+                              </h3>
+                              <div className="mt-2 flex items-center gap-1.5 flex-wrap">
+                                <div className="inline-flex items-center rounded-md bg-slate-900/75 backdrop-blur-xs px-2.5 py-1 text-[11px] font-semibold text-white border border-white/20">
+                                  {ev.date}
+                                </div>
+                                {Boolean(ev.viewCount && ev.viewCount > 0) && (
+                                  <span className="inline-flex items-center gap-1 rounded-md bg-[#1884F7] px-2 py-0.5 text-[11px] font-bold text-white shadow-xs">
+                                    <span>조회 {ev.viewCount}회</span>
+                                  </span>
+                                )}
+                              </div>
                             </div>
                           </div>
                         </div>
                       </div>
-                    </div>
-                  ))}
+                    ))}
+                  </div>
                 </div>
-              </div>
+              )}
 
               {/* 캐러셀 인디케이터 점 5개 (클릭 시 해당 슬라이드로 이동) */}
-              <div className="flex justify-center items-center gap-1.5 pt-1">
-                {weeklyTopEvents.map((_, idx) => (
-                  <button
-                    key={idx}
-                    type="button"
-                    onClick={() => setCurrentSlideIndex(idx)}
-                    aria-label={`${idx + 1}번째 축제로 이동`}
-                    className={`transition-all duration-300 rounded-full ${currentSlideIndex === idx
-                        ? 'h-1.5 w-6 bg-slate-800'
-                        : 'size-1.5 bg-slate-300 hover:bg-slate-400'
-                      }`}
-                  />
-                ))}
-              </div>
+              {weeklyTopEvents.length > 0 && (
+                <div className="flex justify-center items-center gap-1.5 pt-1">
+                  {weeklyTopEvents.map((_, idx) => (
+                    <button
+                      key={idx}
+                      type="button"
+                      onClick={() => setCurrentSlideIndex(idx)}
+                      aria-label={`${idx + 1}번째 축제로 이동`}
+                      className={`transition-all duration-300 rounded-full ${currentSlideIndex === idx
+                          ? 'h-1.5 w-6 bg-slate-800'
+                          : 'size-1.5 bg-slate-300 hover:bg-slate-400'
+                        }`}
+                    />
+                  ))}
+                </div>
+              )}
             </section>
 
             {/* 2번: 블루 혜택 배너 (POPPLE ONLY) */}

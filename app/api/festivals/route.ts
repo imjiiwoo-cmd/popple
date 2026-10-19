@@ -167,15 +167,35 @@ export async function GET(request: Request) {
   try {
     const { data: viewData } = await supabase
       .from('festivals')
-      .select('id, view_count')
+      .select('id, title, view_count')
 
     if (Array.isArray(viewData) && viewData.length > 0) {
-      const viewMap = new Map<string, number>(
-        viewData.map((v) => [String(v.id), Number(v.view_count) || 0]),
-      )
+      const viewMap = new Map<string, number>()
+      for (const v of viewData) {
+        const count = Number(v.view_count) || 0
+        const idStr = String(v.id || '')
+        const numId = idStr.replace(/\D/g, '')
+
+        viewMap.set(idStr, count)
+        if (numId) {
+          viewMap.set(numId, count)
+          viewMap.set(`tour_fest_${numId}`, count)
+          viewMap.set(`tour_${numId}`, count)
+          viewMap.set(`festival_${numId}`, count)
+        }
+        if (v.title) {
+          viewMap.set(String(v.title).trim().toLowerCase(), count)
+        }
+      }
+
       for (const f of festivals) {
-        const rawId = f.id.replace(/^tour_fest_|^festival_/, '')
-        f.viewCount = viewMap.get(f.id) || viewMap.get(rawId) || 0
+        const numId = String(f.id).replace(/\D/g, '')
+        const titleKey = String(f.title || '').trim().toLowerCase()
+        f.viewCount =
+          viewMap.get(f.id) ||
+          (numId ? viewMap.get(numId) : undefined) ||
+          viewMap.get(titleKey) ||
+          0
       }
     }
   } catch (err) {

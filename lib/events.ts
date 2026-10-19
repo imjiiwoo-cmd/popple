@@ -14,6 +14,7 @@ export type PoppleEvent = {
   operatingHours?: string
   startDate?: string
   endDate?: string
+  viewCount?: number
 }
 
 export const MOCK_EVENTS: PoppleEvent[] = [
