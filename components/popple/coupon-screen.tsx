@@ -84,7 +84,7 @@ export function CouponScreen({
     setCoupons(updated)
     saveUserCoupons(updated)
     setConfirmModalCoupon(null)
-    showToast(`🎉 [${confirmModalCoupon.title}] 사용 처리가 완료되었습니다!`)
+    showToast(`🎉 [${confirmModalCoupon.title}] 체험 완료 처리가 되었습니다!`)
   }
 
   // 테스트/데모용 쿠폰 초기화
@@ -178,6 +178,15 @@ export function CouponScreen({
           </button>
         </div>
 
+        {/* 시범 운영(Beta) 기능 체험용 가상 쿠폰 상단 안내 카드 */}
+        <div className="rounded-2xl bg-sky-50/70 border border-sky-100 p-3.5 flex items-start gap-2.5 shadow-2xs">
+          <span className="text-base leading-none shrink-0 mt-0.5">💡</span>
+          <p className="text-xs font-semibold text-slate-700 leading-relaxed break-keep">
+            Popple 시범 운영(Beta) 기간 동안 제공되는 기능 체험용 가상 쿠폰입니다.{' '}
+            <span className="text-slate-500 font-bold">(실제 매장 사용 불가)</span>
+          </p>
+        </div>
+
         {/* 3. 쿠폰 목록 세로 카드 리스트 */}
         {displayedCoupons.length === 0 ? (
           /* 빈 화면 안내 (Empty State) */
@@ -233,7 +242,7 @@ export function CouponScreen({
                 {/* 상단: 굵은 할인 금액 + 카테고리 태그 뱃지 + 우측 폭죽 아이콘 ('🎉') */}
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex flex-col gap-1">
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-1.5 flex-wrap">
                       <span className="text-xl sm:text-2xl font-black text-[#1884F7] tracking-tight">
                         {coupon.discount}
                       </span>
@@ -241,6 +250,9 @@ export function CouponScreen({
                         className={`text-[11px] font-bold px-2.5 py-0.5 rounded-full border ${coupon.badgeBg}`}
                       >
                         {coupon.badge}
+                      </span>
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-500 border border-slate-200">
+                        체험용
                       </span>
                     </div>
                     <h2 className="text-sm sm:text-base font-black text-slate-900 leading-snug">
@@ -310,52 +322,53 @@ export function CouponScreen({
         )}
       </main>
 
-      {/* [직원 확인] 컨펌 모달 (Confirm Modal) */}
+      {/* [직원 확인] 시범 운영 안내 모달 */}
       {confirmModalCoupon && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-in fade-in duration-200">
           <div className="w-full max-w-xs bg-white rounded-3xl p-5 shadow-2xl flex flex-col items-center text-center gap-3 animate-in zoom-in-95 duration-200">
             {/* 상단 아이콘 */}
-            <div className="size-13 rounded-2xl bg-amber-50 border border-amber-200/80 flex items-center justify-center text-2xl text-amber-600">
-              🏪
+            <div className="size-13 rounded-2xl bg-sky-50 border border-sky-100 flex items-center justify-center text-2xl text-[#1884F7]">
+              💡
             </div>
 
             {/* 타이틀 및 바우처 정보 */}
-            <div className="flex flex-col gap-1">
+            <div className="flex flex-col gap-1.5">
               <h3 className="text-base font-black text-slate-900">
-                사장님(직원) 확인
+                Popple 서비스 시범 운영 안내
               </h3>
-              <div className="bg-slate-50 rounded-xl p-2.5 border border-slate-100 my-1 text-left">
-                <p className="text-xs font-black text-slate-800 line-clamp-1">
-                  {confirmModalCoupon.title}
-                </p>
+              <div className="bg-slate-50 rounded-xl p-2.5 border border-slate-100 my-0.5 text-left">
+                <div className="flex items-center justify-between gap-2">
+                  <p className="text-xs font-black text-slate-800 line-clamp-1">
+                    {confirmModalCoupon.title}
+                  </p>
+                  <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-slate-200/80 text-slate-600 shrink-0">
+                    체험용
+                  </span>
+                </div>
                 <p className="text-sm font-black text-[#1884F7] mt-0.5">
                   {confirmModalCoupon.discount} 할인
                 </p>
               </div>
-              <p className="text-xs text-slate-500 font-medium break-keep leading-relaxed mt-0.5">
-                사장님(직원) 전용 확인 창입니다.<br />
-                쿠폰을 <strong className="text-slate-800">사용 처리</strong>하시겠습니까?
-              </p>
-              <p className="text-[10px] text-amber-600 font-bold mt-0.5">
-                ⚠️ 사용 완료 후에는 취소하거나 다시 사용할 수 없습니다.
+              <p className="text-xs text-slate-600 font-medium break-keep leading-relaxed">
+                현재 화면은 서비스 기능 체험을 위한 가상 인터랙션입니다. 실제 현장 제휴 매장에서는 사용하실 수 없습니다. 곧 정식 제휴 혜택으로 찾아오겠습니다!
               </p>
             </div>
 
-            {/* 하단 취소 / 사용 완료 버튼 */}
+            {/* 하단 닫기 / 체험 완료해보기 버튼 */}
             <div className="flex gap-2 w-full mt-2">
               <button
                 type="button"
                 onClick={handleCloseConfirmModal}
                 className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold py-2.5 rounded-xl text-xs transition-colors cursor-pointer"
               >
-                취소
+                닫기
               </button>
               <button
                 type="button"
                 onClick={handleConfirmUseCoupon}
                 className="flex-1 bg-[#1884F7] hover:bg-[#0F75E8] active:scale-95 text-white font-bold py-2.5 rounded-xl text-xs transition-all shadow-md shadow-sky-500/20 cursor-pointer"
               >
-                사용 처리하기
+                체험 완료해보기
               </button>
             </div>
           </div>
