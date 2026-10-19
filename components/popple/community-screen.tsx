@@ -366,19 +366,19 @@ export function CommunityScreen({
               </div>
               <div className="flex flex-col gap-1">
                 <p className="text-base font-bold text-slate-800">
-                  아직 등록된 게시글이 없습니다
+                  등록된 게시글이 없습니다. 첫 이야기를 들려주세요!
                 </p>
                 <p className="text-xs text-slate-500 break-keep">
-                  가장 먼저 축제 현장 소식이나 궁금한 점을 남겨보세요!
+                  가장 먼저 축제 현장 소식이나 유용한 꿀팁을 남겨보세요.
                 </p>
               </div>
               <button
                 type="button"
                 onClick={() => setIsWriteModalOpen(true)}
-                className="mt-2 inline-flex items-center gap-1.5 bg-[#1884F7] text-white text-xs font-bold px-4 py-2 rounded-xl shadow-xs hover:bg-[#0F75E8] active:scale-95 transition-all"
+                className="mt-2 inline-flex items-center gap-1.5 bg-[#1884F7] text-white text-xs font-bold px-4 py-2.5 rounded-xl shadow-xs hover:bg-[#0F75E8] active:scale-95 transition-all cursor-pointer"
               >
                 <Plus className="size-4" />
-                첫 게시글 남기기
+                첫 이야기 들려주기
               </button>
             </div>
           ) : (

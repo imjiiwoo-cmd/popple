@@ -67,85 +67,7 @@ export function getRandomAvatarColor(): string {
 
 const STORAGE_KEY = 'popple_community_posts'
 
-const NOW = Date.now()
-
-/**
- * 첫 진입 시 화면이 비어있지 않도록 제공하는 생생한 축제 현장 분위기의 초기 게시글
- */
-export const INITIAL_POSTS: CommunityPost[] = [
-  {
-    id: 'mock_post_1',
-    category: 'photo',
-    author: '불꽃덕후',
-    avatarColor: 'bg-rose-500',
-    content:
-      '오늘 여의도 불꽃축제 명당 자리 공유해요! 마포대교 남단 쪽 지금 돗자리 자리 아직 여유 있습니다 🎆\n\n저녁 7시부터 드론 라이트쇼 시작한다니까 강바람 대비해서 돗자리랑 핫팩, 담요 꼭 챙겨오세요!',
-    imageUrl: '/events/fireworks.png',
-    createdAt: NOW - 35 * 60 * 1000, // 35분 전
-    likes: 38,
-    likedByUser: false,
-    comments: [
-      {
-        id: 'c_1',
-        author: '팝플러12',
-        content: '지금 여의나루역 내렸는데 자리 팁 감사해요!',
-        createdAt: NOW - 20 * 60 * 1000,
-      },
-      {
-        id: 'c_2',
-        author: '피크닉조아',
-        content: '강바람 많이 부나요? 패딩 필수일까요?',
-        createdAt: NOW - 10 * 60 * 1000,
-      },
-    ],
-  },
-  {
-    id: 'mock_post_2',
-    category: 'talk',
-    author: '성수동주민',
-    avatarColor: 'bg-indigo-500',
-    content:
-      '라라라 페스티벌 지금 대기 줄 긴가요? 맥주존 푸드트럭 대기 시간 아시는 분 실시간 제보 부탁드립니다 ㅠㅠ 줄 길면 밖에서 먹고 들어가려구요!',
-    createdAt: NOW - 2 * 60 * 60 * 1000, // 2시간 전
-    likes: 15,
-    likedByUser: false,
-    comments: [
-      {
-        id: 'c_3',
-        author: '맥주요정',
-        content: '방금 맥주존 샀는데 10분 정도 걸렸어요! 회전율 빨라요 ㅎㅎ',
-        createdAt: NOW - 50 * 60 * 1000,
-      },
-    ],
-  },
-  {
-    id: 'mock_post_3',
-    category: 'calendar',
-    author: '단풍요정',
-    avatarColor: 'bg-emerald-500',
-    content:
-      '이번 주말에 갈 축제 달력에 저장해뒀는데 동선 어떤가요? 낮에 선선한 가을산책 축제 갔다가 저녁에 재즈 피크닉 들를 예정입니다 🍂 억새 포토존 추천 스팟 있으시면 알려주세요!',
-    imageUrl: '/events/autumn-walk.jpg',
-    calendarYear: 2026,
-    calendarMonth: 10,
-    calendarDiaries: {
-      '2026-10-04': { imageUrl: '/events/autumn-walk.jpg', memo: '하늘공원 억새축제 산책' },
-      '2026-10-10': { imageUrl: '/events/fireworks.png', memo: '여의도 불꽃축제 인생샷' },
-      '2026-10-18': { imageUrl: '/events/lalala.png', memo: '성수 라라라 비어 페스티벌' },
-    },
-    createdAt: NOW - 4 * 60 * 60 * 1000, // 4시간 전
-    likes: 27,
-    likedByUser: true,
-    comments: [
-      {
-        id: 'c_4',
-        author: '축제마니아',
-        content: '동선 아주 좋아요! 낮 3시쯤 억새밭 햇살 들어올 때가 인생샷 스팟입니다',
-        createdAt: NOW - 1 * 60 * 60 * 1000,
-      },
-    ],
-  },
-]
+export const INITIAL_POSTS: CommunityPost[] = []
 
 /**
  * 상대 시간 포맷터 (방금 전, N분 전, N시간 전, N일 전)
@@ -180,37 +102,23 @@ export function formatRelativeTime(timestamp: number): string {
  * localStorage에서 게시글 목록 조회
  */
 export function getCommunityPosts(): CommunityPost[] {
-  if (typeof window === 'undefined') return INITIAL_POSTS
+  if (typeof window === 'undefined') return []
   try {
     const raw = localStorage.getItem(STORAGE_KEY)
     if (!raw) {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(INITIAL_POSTS))
-      return INITIAL_POSTS
+      return []
     }
     const parsed = JSON.parse(raw)
-    if (!Array.isArray(parsed) || parsed.length === 0) return INITIAL_POSTS
+    if (!Array.isArray(parsed)) return []
 
-    // 과거 저장된 데이터 중 category === 'calendar'인데 calendarDiaries가 없는 경우 보완
-    const patched = parsed.map((p: CommunityPost) => {
-      if (p.category === 'calendar' && (!p.calendarDiaries || Object.keys(p.calendarDiaries).length === 0)) {
-        return {
-          ...p,
-          calendarYear: p.calendarYear ?? 2026,
-          calendarMonth: p.calendarMonth ?? 10,
-          calendarDiaries: {
-            '2026-10-04': { imageUrl: '/events/autumn-walk.jpg', memo: '하늘공원 억새축제 산책' },
-            '2026-10-10': { imageUrl: '/events/fireworks.png', memo: '여의도 불꽃축제 인생샷' },
-            '2026-10-18': { imageUrl: '/events/lalala.png', memo: '성수 라라라 비어 페스티벌' },
-          },
-        }
-      }
-      return p
-    })
-
-    return patched
+    // mock_post 로 시작하는 이전 가짜 목업 게시글 자동 제거
+    const realPosts = parsed.filter(
+      (p: CommunityPost) => p && !p.id?.startsWith('mock_post_'),
+    )
+    return realPosts
   } catch (err) {
     console.warn('[community] Failed to load posts from localStorage:', err)
-    return INITIAL_POSTS
+    return []
   }
 }
 

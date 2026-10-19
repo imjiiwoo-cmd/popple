@@ -43,22 +43,7 @@ interface ReviewItem {
   imageUrl?: string
 }
 
-const DEFAULT_REVIEWS: ReviewItem[] = [
-  {
-    id: 'default-1',
-    nickname: '민트초코',
-    date: '2025.10.07 방문',
-    rating: 4.8,
-    content: '조명이 정말 예쁘고 산책 코스도 잘 되어 있어요. 해가 진 뒤에 방문하면 축제를 더 제대로 즐길 수 있습니다.',
-  },
-  {
-    id: 'default-2',
-    nickname: '별빛산책',
-    date: '2025.10.12 방문',
-    rating: 5.0,
-    content: '가족들과 함께 방문했는데 볼거리와 포토존이 가득해서 인생샷 많이 건졌어요! 주차도 편리했습니다.',
-  },
-]
+
 
 export function EventDetail({ event, onBack }: EventDetailProps) {
   const containerRef = useRef<HTMLDivElement>(null)
@@ -155,15 +140,16 @@ export function EventDetail({ event, onBack }: EventDetailProps) {
       const storedReviews = localStorage.getItem(reviewStorageKey)
       if (storedReviews) {
         const parsed = JSON.parse(storedReviews)
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          setReviews(parsed)
+        if (Array.isArray(parsed)) {
+          // 'default-' 로 시작하는 이전 가짜 목업 후기 자동 필터링
+          const realReviews = parsed.filter((r: ReviewItem) => r && !r.id?.startsWith('default-'))
+          setReviews(realReviews)
           return
         }
       }
-      // 저장된 후기가 없으면 기본 시안 후기 세팅
-      setReviews(DEFAULT_REVIEWS)
+      setReviews([])
     } catch {
-      setReviews(DEFAULT_REVIEWS)
+      setReviews([])
     }
   }, [bookmarkStorageKey, reviewStorageKey])
 
@@ -570,7 +556,7 @@ export function EventDetail({ event, onBack }: EventDetailProps) {
             <div className="flex items-center gap-2">
               <input
                 type="text"
-                placeholder="닉네임 (예: 민트초코)"
+                placeholder="닉네임 (예: 팝플러)"
                 value={newNickname}
                 onChange={(e) => setNewNickname(e.target.value)}
                 maxLength={15}
@@ -645,7 +631,22 @@ export function EventDetail({ event, onBack }: EventDetailProps) {
 
           {/* 후기 리스트 */}
           <div className="space-y-3">
-            {reviews.map((rev) => {
+            {reviews.length === 0 ? (
+              <div className="rounded-2xl border border-dashed border-slate-200 bg-[#F8FAFC]/70 p-7 text-center flex flex-col items-center justify-center gap-2">
+                <div className="size-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-400">
+                  <Star className="size-5 text-slate-300 stroke-[1.8]" />
+                </div>
+                <div className="flex flex-col gap-0.5">
+                  <p className="text-xs font-bold text-slate-700">
+                    아직 등록된 방문 후기가 없습니다. 첫 후기를 남겨보세요!
+                  </p>
+                  <p className="text-[11px] text-slate-400 break-keep">
+                    축제에 다녀오신 생생한 경험과 꿀팁을 위 작성 폼에서 남겨보세요.
+                  </p>
+                </div>
+              </div>
+            ) : (
+              reviews.map((rev) => {
               const initial = rev.nickname ? rev.nickname.charAt(0) : '익'
               return (
                 <div
@@ -683,7 +684,7 @@ export function EventDetail({ event, onBack }: EventDetailProps) {
                   )}
                 </div>
               )
-            })}
+            }))}
           </div>
 
           {/* 방문 전 확인해 주세요 안내 박스 (시안 4번 하단) */}
