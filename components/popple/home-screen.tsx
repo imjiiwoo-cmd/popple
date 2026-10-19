@@ -459,7 +459,7 @@ export function HomeScreen({
                   SEARCH RESULT
                 </span>
                 <h2 className="text-lg font-black text-slate-900">
-                  &lsquo;{searchQuery}&rsquo; 검색 결과{' '}
+                  &lsquo;{searchQuery}&rsquo;에 대한 행사 결과{' '}
                   <span className="text-sm font-semibold text-slate-500">
                     ({searchResults.length}건)
                   </span>

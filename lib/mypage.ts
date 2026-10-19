@@ -81,23 +81,8 @@ export interface PhotoDiaryEntry {
   createdAt: number
 }
 
-// 2026년 10월 기본 데모 다이어리 (첫 진입 시 포토 캘린더 효과 확인용)
-const INITIAL_PHOTO_DIARIES: Record<string, PhotoDiaryEntry> = {
-  '2026-10-03': {
-    dateKey: '2026-10-03',
-    imageUrl: '/events/autumn-walk.jpg',
-    memo: '하늘공원 억새 축제 산책로 인생샷 건짐 🌾',
-    festivalTitle: '가을 억새 축제',
-    createdAt: new Date('2026-10-03T15:00:00').getTime(),
-  },
-  '2026-10-10': {
-    dateKey: '2026-10-10',
-    imageUrl: '/events/fireworks.png',
-    memo: '여의도 불꽃축제 한강 돗자리 명당 성공! 🎆',
-    festivalTitle: '서울세계불꽃축제',
-    createdAt: new Date('2026-10-10T20:00:00').getTime(),
-  },
-}
+// 포토 캘린더 기본 상태 (더미 데이터 없이 빈 객체로 시작)
+const INITIAL_PHOTO_DIARIES: Record<string, PhotoDiaryEntry> = {}
 
 /**
  * 포토 캘린더 다이어리 목록 로드
@@ -107,11 +92,27 @@ export function getPhotoDiaries(): Record<string, PhotoDiaryEntry> {
   try {
     const raw = localStorage.getItem(PHOTO_DIARY_KEY)
     if (!raw) {
-      localStorage.setItem(PHOTO_DIARY_KEY, JSON.stringify(INITIAL_PHOTO_DIARIES))
       return INITIAL_PHOTO_DIARIES
     }
     const parsed = JSON.parse(raw)
-    return parsed && typeof parsed === 'object' ? parsed : INITIAL_PHOTO_DIARIES
+    if (parsed && typeof parsed === 'object') {
+      // 레거시 더미 데이터 (2026-10-03 하늘공원, 2026-10-10 불꽃축제) 자동 정리
+      const cleaned = { ...parsed }
+      let hasLegacy = false
+      if (cleaned['2026-10-03']?.memo?.includes('하늘공원') || cleaned['2026-10-03']?.imageUrl === '/events/autumn-walk.jpg') {
+        delete cleaned['2026-10-03']
+        hasLegacy = true
+      }
+      if (cleaned['2026-10-10']?.memo?.includes('불꽃축제') || cleaned['2026-10-10']?.imageUrl === '/events/fireworks.png') {
+        delete cleaned['2026-10-10']
+        hasLegacy = true
+      }
+      if (hasLegacy) {
+        localStorage.setItem(PHOTO_DIARY_KEY, JSON.stringify(cleaned))
+      }
+      return cleaned
+    }
+    return INITIAL_PHOTO_DIARIES
   } catch {
     return INITIAL_PHOTO_DIARIES
   }

@@ -213,6 +213,9 @@ export function MyScreen({
     setProfile(updated)
     saveUserProfile(updated)
     setIsAuthModalOpen(false)
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('popple-login-success'))
+    }
   }
 
   // 프로필 모달 열기
@@ -749,6 +752,35 @@ export function MyScreen({
                 )
               })}
             </div>
+
+            {/* 등록된 일상 기록이 없을 때: Empty State 안내 문구 및 [기록 작성하기] 버튼 */}
+            {Object.keys(photoDiaries).length === 0 && (
+              <div className="mt-2 rounded-2xl border border-dashed border-slate-200 bg-slate-50/80 p-5 flex flex-col items-center justify-center text-center gap-2.5">
+                <div className="size-10 rounded-full bg-sky-100/80 text-[#1884F7] flex items-center justify-center text-lg shadow-2xs">
+                  📸
+                </div>
+                <div className="flex flex-col gap-0.5">
+                  <p className="text-xs font-bold text-slate-800">
+                    아직 작성된 일상 기록이 없습니다.
+                  </p>
+                  <p className="text-[11px] text-slate-500 font-medium">
+                    축제 방문 후 첫 추억을 남겨보세요!
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const now = new Date()
+                    const dateKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`
+                    handleDateClick(dateKey)
+                  }}
+                  className="mt-1 inline-flex items-center gap-1.5 bg-[#1884F7] hover:bg-sky-600 active:scale-95 text-white text-xs font-bold px-4 py-2 rounded-xl shadow-xs transition-all cursor-pointer"
+                >
+                  <Plus className="size-3.5" />
+                  <span>기록 작성하기</span>
+                </button>
+              </div>
+            )}
           </div>
         </section>
 
