@@ -73,7 +73,8 @@ export function PoppleApp() {
       const data = await response.json().catch(() => ({}))
       if (!response.ok) {
         throw new Error(
-          data.error ?? '순간적인 접속량 증가로 추천을 불러오지 못했습니다. 잠시 후 다시 시도해주세요.',
+          data.error ??
+            '현재 지역 내 진행 중인 행사 정보를 불러오는 중입니다. 잠시 후 다시 시도해주세요.',
         )
       }
 
@@ -84,7 +85,7 @@ export function PoppleApp() {
       const isTechnicalJson = msg.includes('{') || msg.includes('ApiError') || msg.includes('503')
       setError(
         isTechnicalJson || !msg
-          ? '순간적인 접속량 증가로 추천을 불러오지 못했습니다. 잠시 후 다시 시도해주세요.'
+          ? '현재 지역 내 진행 중인 행사 정보를 불러오는 중입니다. 잠시 후 다시 시도해주세요.'
           : msg,
       )
       setLensStatus('idle')

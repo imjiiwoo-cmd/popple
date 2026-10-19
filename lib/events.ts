@@ -31,7 +31,7 @@ export const MOCK_EVENTS: PoppleEvent[] = [
   },
   {
     id: "event_home_02",
-    title: "2025 서울 재즈 페스타",
+    title: "서울 재즈 & 피크닉 페스타",
     date: "2026. 05. 30(금) - 06. 01(일)",
     location: "서울 마포구 한강난지로 162 (난지한강공원)",
     price: "입장 무료 (피크닉존 예약제)",

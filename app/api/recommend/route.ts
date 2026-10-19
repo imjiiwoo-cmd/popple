@@ -1,12 +1,16 @@
 import { GoogleGenAI } from '@google/genai'
-import { MOCK_EVENTS } from '@/lib/events'
 import type { PoppleEvent } from '@/lib/events'
 import type { Recommendation } from '@/lib/types'
+import { supabase } from '@/lib/supabaseClient'
 
 export const maxDuration = 60
 
 const MAX_IMAGE_BYTES = 10 * 1024 * 1024 // 10MB
 const ALLOWED_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/gif'])
+
+// TourAPI 기본 인증키 폴백 (배포 환경에서 환경변수 누락 시에도 실제 공공데이터 정상 수집)
+const DEFAULT_TOUR_API_KEY =
+  'ae2f8c36f6339b67ba8401daf1f1416801cfead2a6fe3b02f72775f7bb7df8d3'
 
 // 모델 체인: 안정적인 gemini-3.5-flash / gemini-3.8-flash 우선 적용
 const PRIMARY_MODEL = process.env.GEMINI_MODEL || 'gemini-3.5-flash'
@@ -34,14 +38,20 @@ const AREA_MAP: Record<string, { name: string; keywords: string[] }> = {
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
 
 /**
- * 한국 시각(KST) 기준 오늘 날짜 문자열(YYYYMMDD) 생성
+ * 한국 표준시(KST) 기준 오늘 날짜 문자열(YYYYMMDD)을 동적으로 생성
  */
-function getTodayKstString(): string {
+function getTodayDateString(): string {
   const now = new Date()
-  const kstTime = new Date(now.getTime() + 9 * 60 * 60 * 1000)
-  const yyyy = kstTime.getUTCFullYear()
-  const mm = String(kstTime.getUTCMonth() + 1).padStart(2, '0')
-  const dd = String(kstTime.getUTCDate()).padStart(2, '0')
+  const formatter = new Intl.DateTimeFormat('ko-KR', {
+    timeZone: 'Asia/Seoul',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  })
+  const parts = formatter.formatToParts(now)
+  const yyyy = parts.find((p) => p.type === 'year')?.value || String(now.getFullYear())
+  const mm = parts.find((p) => p.type === 'month')?.value || String(now.getMonth() + 1).padStart(2, '0')
+  const dd = parts.find((p) => p.type === 'day')?.value || String(now.getDate()).padStart(2, '0')
   return `${yyyy}${mm}${dd}`
 }
 
@@ -74,13 +84,13 @@ interface TourFestivalItem {
 
 /**
  * 공공데이터포털 한국관광공사 TourAPI KorService2에서 실시간 축제 데이터 조회
- * 선택된 areaCode가 있으면 해당 지역 축제를 조회/필터링하고, 축제가 부족할 시 전국 단위로 폴백합니다.
+ * 오늘 날짜 기준 종료된 축제(endDate < today)는 완전히 제외하고 실제 진행 중/예정 축제만 수집
  */
 async function fetchLiveFestivals(
   tourApiKey: string,
   areaCode?: string,
 ): Promise<{ festivals: PoppleEvent[]; areaNotice?: string }> {
-  const today = getTodayKstString()
+  const today = getTodayDateString()
   const decodedKey = decodeURIComponent(tourApiKey.trim())
   const selectedArea = areaCode && AREA_MAP[areaCode] ? AREA_MAP[areaCode] : null
 
@@ -91,7 +101,7 @@ async function fetchLiveFestivals(
   url.searchParams.set('_type', 'json')
   url.searchParams.set('eventStartDate', today)
   url.searchParams.set('arrange', 'A')
-  url.searchParams.set('numOfRows', '60') // 지역 필터링을 고려하여 넉넉히 60건 수집
+  url.searchParams.set('numOfRows', '80')
 
   if (selectedArea && areaCode) {
     url.searchParams.set('areaCode', areaCode)
@@ -102,79 +112,79 @@ async function fetchLiveFestivals(
       `[popple] Calling TourAPI searchFestival2 (startDate: ${today}, areaCode: ${areaCode || 'ALL'})...`,
     )
     const res = await fetch(url.toString(), {
-      signal: AbortSignal.timeout(6000), // 공공데이터포털 응답 지연 방지 (6초)
+      signal: AbortSignal.timeout(8000),
     })
 
-    if (!res.ok) {
-      throw new Error(`TourAPI HTTP error: ${res.status}`)
+    let rawItems: TourFestivalItem[] = []
+    if (res.ok) {
+      const data = await res.json().catch(() => ({}))
+      rawItems = data.response?.body?.items?.item || []
     }
 
-    const data = await res.json()
-    let rawItems: TourFestivalItem[] = data.response?.body?.items?.item || []
-
-    // TourAPI에서 areaCode 파라미터 전달 시 데이터베이스 색인 특성으로 0건이 오는 경우 대비:
-    // 전국 단위로 재호출하여 addr1(주소) 키워드로 해당 지역 축제를 스마트 필터링합니다.
+    // areaCode 파라미터로 0건이 오는 경우 전국 단위 조회 후 주소 키워드로 필터링
     if (selectedArea && (!Array.isArray(rawItems) || rawItems.length === 0)) {
       console.log(
         `[popple] TourAPI returned 0 items with areaCode=${areaCode}. Querying nationwide and filtering by address...`,
       )
       url.searchParams.delete('areaCode')
       const fallbackRes = await fetch(url.toString(), {
-        signal: AbortSignal.timeout(6000),
+        signal: AbortSignal.timeout(8000),
       })
       if (fallbackRes.ok) {
-        const fallbackData = await fallbackRes.json()
+        const fallbackData = await fallbackRes.json().catch(() => ({}))
         const allItems: TourFestivalItem[] = fallbackData.response?.body?.items?.item || []
-        rawItems = allItems.filter((item) =>
+        rawItems = (Array.isArray(allItems) ? allItems : []).filter((item) =>
           selectedArea.keywords.some((k) => (item.addr1 || '').includes(k)),
         )
       }
     }
 
-    // 1. 이미 종료된 행사 제외 필터링 (현재 진행 중이거나 앞으로 열릴 행사만 유지)
+    // 1. 종료된 행사 제외 필터링 (endDate < Today 무조건 제외)
     let activeItems = (Array.isArray(rawItems) ? rawItems : []).filter((item) => {
       const end = (item.eventenddate || '').trim()
       const start = (item.eventstartdate || '').trim()
       if (end && end < today) return false
       if (!end && start && start < today) return false
+      // 과거 연도 행사 제외
+      if (end && end.length >= 4 && Number(end.slice(0, 4)) < Number(today.slice(0, 4))) return false
       return true
     })
 
     let areaNotice: string | undefined = undefined
 
-    // 2. 만약 해당 지역에 현재 진행/예정 축제가 없는 경우 (0건):
-    // 친절한 안내 문구와 함께 전국 단위 축제로 전환하여 빈 화면이 나오지 않도록 폴백합니다.
+    // 2. 해당 지역에 현재 축제가 적은 경우 전국 단위 축제로 전환
     if (selectedArea && activeItems.length === 0) {
       areaNotice = `선택하신 [${selectedArea.name}] 지역에 현재 진행 중인 축제가 적어 전국 단위 추천으로 전환합니다.`
       console.log(`[popple] ${areaNotice}`)
 
       url.searchParams.delete('areaCode')
       const nationwideRes = await fetch(url.toString(), {
-        signal: AbortSignal.timeout(6000),
+        signal: AbortSignal.timeout(8000),
       })
       if (nationwideRes.ok) {
-        const nwData = await nationwideRes.json()
+        const nwData = await nationwideRes.json().catch(() => ({}))
         const allRawItems: TourFestivalItem[] = nwData.response?.body?.items?.item || []
-        activeItems = allRawItems.filter((item) => {
+        activeItems = (Array.isArray(allRawItems) ? allRawItems : []).filter((item) => {
           const end = (item.eventenddate || '').trim()
           const start = (item.eventstartdate || '').trim()
           if (end && end < today) return false
           if (!end && start && start < today) return false
+          if (end && end.length >= 4 && Number(end.slice(0, 4)) < Number(today.slice(0, 4))) return false
           return true
         })
       }
     }
 
     if (activeItems.length === 0) {
-      console.warn('[popple] No active festivals found. Falling back to default mock events.')
-      return { festivals: MOCK_EVENTS, areaNotice }
+      console.warn('[popple] No active festivals found from TourAPI.')
+      return { festivals: [], areaNotice }
     }
 
     console.log(
-      `[popple] Active/Upcoming festivals after filtering: ${activeItems.length} items (area: ${selectedArea ? selectedArea.name : '전국'})`,
+      `[popple] Active festivals after filtering: ${activeItems.length} items (area: ${selectedArea ? selectedArea.name : '전국'})`,
     )
 
-    // 3. 포스터 이미지(firstimage)가 유효한 행사 위주로 우선 정렬
+    // 3. 포스터 이미지가 있는 행사 우선 정렬
     const sortedItems = [...activeItems].sort((a, b) => {
       const aHasImg = Boolean(a.firstimage && a.firstimage.trim().startsWith('http'))
       const bHasImg = Boolean(b.firstimage && b.firstimage.trim().startsWith('http'))
@@ -183,13 +193,12 @@ async function fetchLiveFestivals(
       return 0
     })
 
-    // 4. 최신 축제 정제 (최대 20건)
+    // 4. 최신 실제 축제 목록 정제 (최대 20건)
     const candidates = sortedItems.slice(0, 20)
 
     const cleanedEvents: PoppleEvent[] = candidates.map((item, idx) => {
       const rawImage = (item.firstimage || item.firstimage2 || '').trim()
-      const fallbackPoster = MOCK_EVENTS[idx % MOCK_EVENTS.length].imageUrl
-      const imageUrl = rawImage.startsWith('http') ? rawImage : fallbackPoster
+      const imageUrl = rawImage.startsWith('http') ? rawImage : '/events/rock-festival.png'
 
       const addrTokens = (item.addr1 || '').split(' ').filter(Boolean)
       const locationShort = addrTokens.slice(0, 2).join(' ') || '전국'
@@ -217,7 +226,44 @@ async function fetchLiveFestivals(
     return { festivals: cleanedEvents, areaNotice }
   } catch (error) {
     console.error('[popple] Failed to fetch festivals from TourAPI:', error)
-    return { festivals: MOCK_EVENTS }
+    return { festivals: [], areaNotice: undefined }
+  }
+}
+
+/**
+ * Supabase에서 실제 축제 데이터 조회 (TourAPI 보조용)
+ */
+async function fetchSupabaseFestivals(today: string): Promise<PoppleEvent[]> {
+  try {
+    const { data, error } = await supabase
+      .from('festivals')
+      .select('*')
+      .gte('end_date', today)
+      .limit(20)
+
+    if (error || !data || !Array.isArray(data) || data.length === 0) {
+      return []
+    }
+
+    return data
+      .filter((item: any) => {
+        const end = (item.end_date || item.endDate || '').replace(/[^0-9]/g, '').trim()
+        return !end || end >= today
+      })
+      .map((item: any, idx: number) => ({
+        id: String(item.id || `sb_${idx}`),
+        title: item.title,
+        date: formatFestivalDate(item.start_date || item.startDate, item.end_date || item.endDate),
+        location: item.location || item.addr1 || '상세 장소는 주최측 공지 참조',
+        price: item.price || '무료 관람 (체험비 별도)',
+        imageUrl: item.image_url || item.poster || '/events/rock-festival.png',
+        poster: item.image_url || item.poster || '/events/rock-festival.png',
+        tags: Array.isArray(item.tags) ? item.tags : ['진행중축제', '문화행사'],
+        category: item.category || '축제/행사',
+        description: item.description || `${item.title} 실시간 행사`,
+      }))
+  } catch {
+    return []
   }
 }
 
@@ -248,47 +294,53 @@ async function callGeminiVision(
                 mimeType,
               },
             },
-            '이 사진의 시각적 요소(색감, 조명, 계절감, 분위기, 장소, 피사체)와 감성적인 무드를 정밀하게 분석하고, 제공된 실시간 축제 목록 중 가장 잘 어울리는 축제 1개를 매칭하여 지정된 JSON으로 응답해주세요.',
+            {
+              text: '이 사진의 시각적 무드와 분위기를 정밀 분석하고, 제공된 실시간 축제 목록 중 가장 잘 어울리는 축제 1개를 매칭하여 지정된 JSON 스키마로만 응답해주세요.',
+            },
           ],
           config: {
             systemInstruction,
+            temperature: 0.2,
             responseMimeType: 'application/json',
-            temperature: 0.3,
           },
         })
 
-        if (response.text) {
-          console.log(`[popple] [Gemini Vision] Success with model: ${model}`)
-          return { rawText: response.text, usedModel: model }
+        const rawText = response.text?.trim()
+        if (rawText) {
+          return { rawText, usedModel: model }
         }
-      } catch (err) {
+        throw new Error(`Empty response from model ${model}`)
+      } catch (err: unknown) {
         lastError = err
-        const errMsg = err instanceof Error ? err.message : String(err)
-        console.warn(`[popple] [Gemini Vision] Model ${model} (attempt ${attempt}) failed: ${errMsg}`)
+        const errMessage = err instanceof Error ? err.message : String(err)
+        console.warn(`[popple] Model ${model} attempt ${attempt} failed: ${errMessage}`)
 
-        const isRetryable =
-          errMsg.includes('503') ||
-          errMsg.includes('429') ||
-          errMsg.includes('high demand') ||
-          errMsg.includes('UNAVAILABLE')
+        const isRateLimit =
+          errMessage.includes('RESOURCE_EXHAUSTED') ||
+          errMessage.includes('429') ||
+          errMessage.includes('quota')
 
-        if (isRetryable && attempt < maxRetries) {
-          console.log(`[popple] Retrying in 1.5s for model ${model}...`)
-          await sleep(1500)
+        if (isRateLimit && attempt < maxRetries) {
+          console.log(`[popple] Rate limit encountered. Waiting 2000ms before retry...`)
+          await sleep(2000)
           continue
-        } else {
-          break
         }
+
+        break
       }
     }
   }
 
-  throw lastError
+  const errorDetail = lastError instanceof Error ? lastError.message : JSON.stringify(lastError)
+  console.error('[popple] All Gemini Vision models exhausted. Last error:', errorDetail)
+  throw new Error(
+    '순간적인 접속량 증가로 AI 사진 분석을 완료하지 못했습니다. 잠시 후 다시 시도해주세요.',
+  )
 }
 
 export async function POST(request: Request) {
   const geminiApiKey = process.env.GEMINI_API_KEY
-  const tourApiKey = process.env.TOUR_API_KEY
+  const tourApiKey = process.env.TOUR_API_KEY || DEFAULT_TOUR_API_KEY
 
   if (!geminiApiKey || geminiApiKey === 'your_gemini_api_key_here') {
     console.error('[popple] GEMINI_API_KEY is missing or invalid in process.env')
@@ -325,14 +377,30 @@ export async function POST(request: Request) {
   }
 
   try {
-    // 1. TourAPI 실시간 축제 목록 조회 (선택된 areaCode 반영)
-    const { festivals, areaNotice } = tourApiKey
-      ? await fetchLiveFestivals(tourApiKey, areaCode)
-      : { festivals: MOCK_EVENTS, areaNotice: undefined }
+    // 1. 한국관광공사 TourAPI 실시간 축제 목록 조회 (선택된 areaCode 반영, 종료된 행사 제외)
+    let { festivals, areaNotice } = await fetchLiveFestivals(tourApiKey, areaCode)
+
+    // 만약 TourAPI 응답이 비어있을 경우 Supabase 실시간 축제 데이터 조회
+    if (festivals.length === 0) {
+      console.log('[popple] No live festivals from TourAPI. Checking Supabase...')
+      const today = getTodayDateString()
+      festivals = await fetchSupabaseFestivals(today)
+    }
+
+    // 실제 진행 중인 축제가 없을 경우 가짜 샘플 행사를 절대 띄우지 않고 깔끔한 안내 반환
+    if (festivals.length === 0) {
+      console.warn('[popple] No active festivals found. Returning active notice.')
+      return Response.json(
+        {
+          error: '현재 지역 내 진행 중인 행사 정보를 불러오는 중입니다. 잠시 후 다시 시도해주세요.',
+        },
+        { status: 503 },
+      )
+    }
 
     const areaName = areaCode && AREA_MAP[areaCode] ? AREA_MAP[areaCode].name : '전국'
 
-    // 2. Gemini에게 전달할 축제 카탈로그 프롬프트 구성 (최대 20개)
+    // 2. Gemini에게 전달할 실제 진행 중인 축제 카탈로그 프롬프트 구성 (최대 20개)
     const catalogPrompt = festivals
       .slice(0, 20)
       .map(
@@ -414,14 +482,8 @@ ${catalogPrompt}
       parsed.detailed_reason?.match_reason ||
       `사진에서 느껴지는 분위기와 "${matchedEvent.title}"의 정취가 자연스럽게 어우러져요.`
 
-    // 서브 추천 행사 2개 선정 (메인 추천 행사 제외)
-    let subEvents = festivals.filter((f) => f.id !== matchedEvent.id).slice(0, 2)
-    if (subEvents.length < 2) {
-      const fallbackSub = MOCK_EVENTS.filter(
-        (m) => m.id !== matchedEvent.id && !subEvents.some((s) => s.id === m.id),
-      )
-      subEvents = [...subEvents, ...fallbackSub].slice(0, 2)
-    }
+    // 서브 추천 행사 최대 2개 선정 (실제 행사 목록 중에서만 추출, 가짜 목업 완전 배제)
+    const subEvents = festivals.filter((f) => f.id !== matchedEvent.id).slice(0, 2)
 
     const result: Recommendation = {
       recommended_event_id: matchedEvent.id,
@@ -455,7 +517,7 @@ ${catalogPrompt}
     return Response.json(
       {
         error:
-          '순간적인 접속량 증가로 추천을 불러오지 못했습니다. 잠시 후 다시 시도해주세요.',
+          '현재 지역 내 진행 중인 행사 정보를 불러오는 중입니다. 잠시 후 다시 시도해주세요.',
       },
       { status: 503 },
     )

@@ -1,4 +1,3 @@
-import { MOCK_EVENTS } from '@/lib/events'
 import type { PoppleEvent } from '@/lib/events'
 
 export const maxDuration = 30
@@ -63,7 +62,8 @@ export async function GET(request: Request) {
 
   // 오늘 날짜 (YYYYMMDD)
   const todayStr = getTodayDateString()
-  const tourApiKey = process.env.TOUR_API_KEY
+  const DEFAULT_TOUR_API_KEY = 'ae2f8c36f6339b67ba8401daf1f1416801cfead2a6fe3b02f72775f7bb7df8d3'
+  const tourApiKey = process.env.TOUR_API_KEY || DEFAULT_TOUR_API_KEY
   let tourEvents: PoppleEvent[] = []
 
   if (tourApiKey && tourApiKey !== 'your_tour_api_key_here') {
@@ -194,7 +194,7 @@ export async function GET(request: Request) {
       // 5) PoppleEvent 모델로 가공
       tourEvents = uniqueItems.map((item, idx) => {
         const rawImage = (item.firstimage || item.firstimage2 || '').trim()
-        const fallbackPoster = MOCK_EVENTS[idx % MOCK_EVENTS.length].imageUrl
+        const fallbackPoster = '/events/rock-festival.png'
         const imageUrl = rawImage.startsWith('http') ? rawImage : fallbackPoster
 
         const title =
