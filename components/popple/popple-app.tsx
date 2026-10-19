@@ -25,9 +25,9 @@ type LensStatus = 'idle' | 'loading' | 'result'
 type ScreenMode = 'home' | 'events' | 'community' | 'my' | 'lens' | 'detail' | 'coupons'
 type NavMode = 'home' | 'events' | 'community' | 'my' | 'lens' | 'coupons'
 
-export function PoppleApp() {
-  const [mode, setMode] = useState<ScreenMode>('home')
-  const [previousMode, setPreviousMode] = useState<NavMode>('home')
+export function PoppleApp({ initialMode = 'home' }: { initialMode?: ScreenMode } = {}) {
+  const [mode, setMode] = useState<ScreenMode>(initialMode)
+  const [previousMode, setPreviousMode] = useState<NavMode>(initialMode === 'lens' ? 'home' : initialMode as NavMode)
 
   const [file, setFile] = useState<File | null>(null)
   const [areaCode, setAreaCode] = useState<string>('')

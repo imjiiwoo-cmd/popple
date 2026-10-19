@@ -279,20 +279,20 @@ export function HomeScreen({
             />
           </div>
 
-          {/* 중앙 검색창: 돋보기 아이콘 및 '어디로 놀러갈까요?' 플레이스홀더 */}
+          {/* 중앙 검색창: 돋보기 아이콘 및 사진 검색 지원 플레이스홀더 */}
           <form
             onSubmit={(e) => {
               e.preventDefault()
               handleSearch(keyword)
             }}
-            className="relative flex-1 flex items-center bg-slate-100/90 hover:bg-slate-100 focus-within:bg-white focus-within:ring-2 focus-within:ring-[#1884F7]/25 rounded-full px-3.5 py-2 border border-slate-200/60 transition-all"
+            className="relative flex-1 min-w-0 flex items-center bg-slate-100/90 hover:bg-slate-100 focus-within:bg-white focus-within:ring-2 focus-within:ring-[#1884F7]/25 rounded-full px-3 py-1.5 sm:px-3.5 sm:py-2 border border-slate-200/60 transition-all"
           >
             <input
               type="text"
               value={keyword}
               onChange={(e) => setKeyword(e.target.value)}
-              placeholder="어디로 놀러갈까요?"
-              className="w-full bg-transparent text-xs text-slate-800 placeholder:text-slate-400 focus:outline-none pr-6 font-medium"
+              placeholder="검색어 또는 사진으로 축제를 찾아보세요"
+              className="w-full bg-transparent text-[11px] sm:text-xs text-slate-800 placeholder:text-slate-400 focus:outline-none pr-6 font-medium truncate"
             />
             {keyword ? (
               <button
@@ -313,22 +313,32 @@ export function HomeScreen({
             </button>
           </form>
 
-          {/* 우측 액션 버튼: [📷 카메라 렌즈 버튼] & [🔔 알림 아이콘] */}
-          <div className="shrink-0 flex items-center gap-1">
-            {/* 카메라 버튼 (Popple Lens 화면 전환) */}
-            <button
-              type="button"
-              onClick={onOpenLens}
-              aria-label="사진 기반 맞춤 행사 추천 (Popple Lens)"
-              title="사진 기반 맞춤 추천"
-              className="relative p-2 rounded-full text-slate-700 hover:bg-sky-50 hover:text-[#1884F7] active:scale-90 transition-all"
-            >
-              <Camera className="size-5.5 stroke-[2]" />
-              <span className="absolute -top-0.5 -right-0.5 flex size-2.5">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#1884F7] opacity-75" />
-                <span className="relative inline-flex rounded-full size-2.5 bg-[#1884F7]" />
+          {/* 우측 액션 버튼: [📷 카메라 렌즈 버튼 + AI 렌즈 뱃지] & [🔔 알림 아이콘] */}
+          <div className="shrink-0 flex items-center gap-1 sm:gap-1.5">
+            {/* 카메라 버튼 (Popple Lens 화면 전환) + AI 렌즈 미니 태그 뱃지 */}
+            <div className="relative pt-1">
+              <button
+                type="button"
+                onClick={onOpenLens}
+                aria-label="사진 기반 맞춤 행사 추천 (Popple Lens)"
+                title="Popple Lens - 사진 기반 맞춤 행사 추천"
+                className="group relative flex items-center justify-center size-9 rounded-full bg-gradient-to-br from-sky-50 to-blue-100/70 text-[#1884F7] ring-1.5 ring-[#1884F7]/30 hover:ring-[#1884F7] hover:bg-sky-100 active:scale-95 transition-all shadow-2xs"
+              >
+                <Camera className="size-5 stroke-[2.2] transition-transform duration-200 group-hover:scale-110" />
+                <span className="absolute -top-0.5 -right-0.5 flex size-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#1884F7] opacity-75" />
+                  <span className="relative inline-flex rounded-full size-2 bg-[#1884F7]" />
+                </span>
+              </button>
+
+              {/* 상단 미니 태그 뱃지 ("AI 렌즈 ✨") */}
+              <span
+                onClick={onOpenLens}
+                className="cursor-pointer absolute -top-1.5 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full bg-gradient-to-r from-[#1884F7] to-indigo-600 px-1.5 py-0.2 text-[8px] font-black text-white shadow-xs tracking-tight transition-transform hover:scale-105 active:scale-95 select-none animate-pulse"
+              >
+                AI 렌즈 ✨
               </span>
-            </button>
+            </div>
 
             {/* 알림 아이콘 */}
             <button
@@ -499,7 +509,7 @@ export function HomeScreen({
               </div>
             ) : searchResults.length === 0 ? (
               /* 검색 결과가 없을 때의 안내 문구 (요건 3) */
-              <div className="flex flex-col items-center justify-center py-16 px-4 bg-white rounded-3xl border border-slate-200/80 text-center gap-3 shadow-xs">
+              <div className="flex flex-col items-center justify-center py-14 px-4 bg-white rounded-3xl border border-slate-200/80 text-center gap-3 shadow-xs">
                 <div className="size-12 rounded-full bg-slate-100 flex items-center justify-center text-slate-400">
                   <Search className="size-6 stroke-[1.8]" />
                 </div>
@@ -509,6 +519,14 @@ export function HomeScreen({
                     축제명이나 지역명(예: 재즈, 전시, 서울, 부산 등)으로 다시 검색해보세요.
                   </p>
                 </div>
+                <button
+                  type="button"
+                  onClick={onOpenLens}
+                  className="mt-2 inline-flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-[#1884F7] to-indigo-600 px-4 py-2.5 text-xs font-bold text-white shadow-xs hover:shadow-md transition-all active:scale-95"
+                >
+                  <Camera className="size-4" />
+                  <span>내 사진으로 맞춤 행사 찾아보기</span>
+                </button>
               </div>
             ) : (
               /* 검색 결과 목록 */
@@ -571,7 +589,54 @@ export function HomeScreen({
         ) : (
           /* 기존 홈 화면 시안 섹션들 유지 */
           <>
-            {/* 1번: WEEKLY RANKING 이번 주 가장 핫한 축제 */}
+            {/* 0. [Popple Lens AI 사진 맞춤 행사 추천 유도 히어로 미니 배너] */}
+            <section
+              onClick={onOpenLens}
+              role="button"
+              tabIndex={0}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault()
+                  onOpenLens()
+                }
+              }}
+              aria-label="Popple Lens - 사진 한 장으로 찾는 취향 맞춤 행사"
+              className="group relative cursor-pointer overflow-hidden rounded-2xl bg-gradient-to-r from-sky-500 via-[#1884F7] to-indigo-600 p-3.5 sm:p-4 text-white shadow-md shadow-sky-500/15 transition-all duration-300 hover:shadow-lg hover:shadow-sky-500/25 hover:scale-[1.01] active:scale-[0.99] border border-white/20"
+            >
+              {/* 배경 장식 광채 및 그리드/블러 이펙트 */}
+              <div className="pointer-events-none absolute -right-6 -bottom-8 size-28 rounded-full bg-white/15 blur-2xl transition-all duration-500 group-hover:scale-125 group-hover:bg-white/25" />
+              <div className="pointer-events-none absolute -left-4 -top-6 size-20 rounded-full bg-sky-300/20 blur-xl" />
+
+              <div className="relative flex items-center justify-between gap-3">
+                <div className="flex flex-col gap-0.5 min-w-0">
+                  <div className="flex items-center gap-1.5 mb-0.5">
+                    <span className="inline-flex items-center gap-1 rounded-full bg-white/20 backdrop-blur-md px-2 py-0.5 text-[9.5px] font-black tracking-wider uppercase text-white shadow-2xs">
+                      <Sparkles className="size-2.5 fill-amber-300 text-amber-300 animate-pulse" />
+                      POPPLE LENS
+                    </span>
+                    <span className="text-[10px] text-sky-100 font-semibold hidden xs:inline">
+                      AI 비전 추천
+                    </span>
+                  </div>
+
+                  <h3 className="text-sm sm:text-base font-black leading-snug tracking-tight text-white flex items-center gap-1.5">
+                    <span>📸 사진 한 장으로 찾는 취향 맞춤 행사</span>
+                  </h3>
+                  <p className="text-[11px] sm:text-xs text-sky-100 font-medium line-clamp-1 leading-normal">
+                    어디 갈지 고민될 때 내 기분·풍경 사진을 올려보세요
+                  </p>
+                </div>
+
+                {/* 우측 버튼: [AI 추천받기 >] */}
+                <div className="shrink-0">
+                  <span className="inline-flex items-center gap-1 rounded-xl bg-white/95 hover:bg-white text-[#1884F7] group-hover:text-[#0F75E8] px-2.5 py-1.5 sm:px-3 sm:py-2 text-xs font-black shadow-sm transition-all duration-200 group-hover:shadow-md group-hover:translate-x-0.5">
+                    <span>AI 추천받기</span>
+                    <ChevronRight className="size-3.5 stroke-[2.5] transition-transform duration-200 group-hover:translate-x-0.5" />
+                  </span>
+                </div>
+              </div>
+            </section>
+
             {/* 1번: WEEKLY RANKING 이번 주 가장 핫한 축제 */}
             <section aria-labelledby="section-weekly" className="flex flex-col gap-2.5">
               <div className="flex items-end justify-between">
