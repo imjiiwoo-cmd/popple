@@ -10,10 +10,38 @@ const notoSansKr = Noto_Sans_KR({
 })
 
 export const metadata: Metadata = {
-  title: '팝플 Popple - AI 맞춤 행사 추천',
+  metadataBase: new URL('https://popple-five.vercel.app'),
+  title: '팝플(Popple) - 우리 동네 축제 & 팝업스토어 정보 플랫폼',
   description:
-    '마음에 드는 포스터나 주변 풍경을 찍어보세요. AI가 사진의 무드를 분석해 딱 맞는 행사를 찾아드립니다.',
-  generator: 'v0.app',
+    '전국 지역 축제와 팝업스토어 정보, 현장 상생 할인 쿠폰까지 한눈에 확인하는 팝플(Popple)입니다.',
+  keywords: ['팝플', 'popple', '지역축제', '축제정보', '팝업스토어', '축제쿠폰'],
+  alternates: {
+    canonical: 'https://popple-five.vercel.app',
+  },
+  openGraph: {
+    type: 'website',
+    locale: 'ko_KR',
+    url: 'https://popple-five.vercel.app',
+    siteName: '팝플 (Popple)',
+    title: '팝플(Popple) - 우리 동네 축제 & 팝업스토어 정보 플랫폼',
+    description:
+      '전국 지역 축제와 팝업스토어 정보, 현장 상생 할인 쿠폰까지 한눈에 확인하는 팝플(Popple)입니다.',
+    images: [
+      {
+        url: '/images/popple-logo.png',
+        width: 800,
+        height: 400,
+        alt: '팝플 Popple 로고',
+      },
+    ],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: '팝플(Popple) - 우리 동네 축제 & 팝업스토어 정보 플랫폼',
+    description:
+      '전국 지역 축제와 팝업스토어 정보, 현장 상생 할인 쿠폰까지 한눈에 확인하는 팝플(Popple)입니다.',
+    images: ['/images/popple-logo.png'],
+  },
   icons: {
     icon: [
       { url: '/icon-light-32x32.png', media: '(prefers-color-scheme: light)' },
