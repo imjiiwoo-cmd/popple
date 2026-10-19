@@ -188,78 +188,131 @@ export async function fetchGlobalViewCounts(): Promise<Record<string, number>> {
 }
 
 /**
- * [Supabase 실시간 연동] 주간 랭킹(이번 주 가장 핫한 축제) 산출
- * - Supabase의 `festivals` 테이블에서 `view_count`가 가장 높은 순서대로 데이터를 가져와서
- * - TourAPI 데이터 목록(candidatePool)과 id/title 기준으로 매칭하여 1위, 2위, 3위 ... 카드로 바인딩
+ * [Supabase 실시간 연동] 주간 랭킹(이번 주 가장 핫한 축제 TOP 5) 산출
+ * - 최근 7일간(current_date - 7 days)의 조회수 합계(festival_daily_views 또는 festivals.view_count + 7일 로컬 클릭) 기준
+ * - TourAPI 축제 목록과 id/title 기준으로 매칭하여 상위 축제 반환
  */
 export async function fetchWeeklyTopFestivals(
   candidatePool: PoppleEvent[] = [],
   limit = 5,
 ): Promise<PoppleEvent[]> {
   try {
-    const { data: topFestivals, error } = await supabase
+    const now = Date.now()
+    const sevenDaysAgoMs = now - 7 * 24 * 60 * 60 * 1000
+    const sevenDaysAgoStr = new Date(sevenDaysAgoMs).toISOString().split('T')[0]
+
+    // 1. festival_daily_views 테이블에서 최근 7일간 데이터 조회
+    const { data: dailyRows } = await supabase
+      .from('festival_daily_views')
+      .select('festival_id, view_count, view_date')
+      .gte('view_date', sevenDaysAgoStr)
+
+    // 2. festivals 테이블에서 전체 view_count 조회
+    const { data: topFestivals, error: festivalsError } = await supabase
       .from('festivals')
       .select('*')
       .order('view_count', { ascending: false })
-      .limit(limit)
 
-    if (error) {
-      console.warn('[ranking] Supabase top festivals query failed:', error)
-      return computeWeeklyRanking(candidatePool, limit)
+    if (festivalsError) {
+      console.warn('[ranking] Supabase top festivals query failed:', festivalsError)
     }
+
+    // 3. 로컬 7일 클릭 로그
+    const logs = getEventClickLogs().filter((l) => l.timestamp >= sevenDaysAgoMs)
+
+    // 4. 축제별 7일간 통합 조회수 집계
+    const countsMap = new Map<string, { count: number; record?: Record<string, unknown> }>()
+
+    // (1) festival_daily_views 합산
+    if (Array.isArray(dailyRows)) {
+      for (const row of dailyRows) {
+        if (!row.festival_id) continue
+        const fid = String(row.festival_id)
+        if (fid.startsWith('test_')) continue
+        const current = countsMap.get(fid) || { count: 0 }
+        current.count += Number(row.view_count) || 0
+        countsMap.set(fid, current)
+      }
+    }
+
+    // (2) festivals 테이블의 view_count 반영 (daily_views가 없는 경우 festivals.view_count 활용)
+    if (Array.isArray(topFestivals)) {
+      for (const row of topFestivals) {
+        if (!row.id || String(row.id).startsWith('test_') || row.title === '테스트') continue
+        const fid = String(row.id)
+        const current = countsMap.get(fid) || { count: 0, record: row }
+        current.record = row
+        // dailyRows에 기록이 없거나 적을 경우 festivals.view_count를 기본값으로 활용
+        if (current.count < (Number(row.view_count) || 0)) {
+          current.count = Number(row.view_count) || 0
+        }
+        countsMap.set(fid, current)
+      }
+    }
+
+    // (3) 로컬 7일 클릭 추가 가중
+    for (const log of logs) {
+      const fid = String(log.id)
+      const current = countsMap.get(fid) || { count: 0 }
+      current.count += 1
+      countsMap.set(fid, current)
+    }
+
+    // 집계 결과를 배열로 변환 후 정렬
+    const sortedDbItems = Array.from(countsMap.entries())
+      .map(([id, info]) => ({ id, ...info }))
+      .sort((a, b) => b.count - a.count)
 
     const result: PoppleEvent[] = []
     const usedKeys = new Set<string>()
 
-    // 1. Supabase view_count 내림차순 결과를 1위부터 순서대로 매칭
-    if (Array.isArray(topFestivals) && topFestivals.length > 0) {
-      for (const record of topFestivals) {
-        const cleanDbId = extractCleanId(record.id)
-        const dbTitle = (record.title || '').trim().toLowerCase()
+    // TourAPI 데이터 목록(candidatePool)과 id 및 제목 기준으로 매칭
+    for (const item of sortedDbItems) {
+      const cleanDbId = extractCleanId(item.id)
+      const dbTitle = item.record && typeof item.record.title === 'string'
+        ? item.record.title.trim().toLowerCase()
+        : ''
 
-        // candidatePool(TourAPI)에서 ID 또는 제목으로 매칭
-        const matched = candidatePool.find((item) => {
-          const cleanItemId = extractCleanId(item.id)
-          if (cleanItemId && cleanDbId && cleanItemId === cleanDbId) return true
-          if (item.id === record.id) return true
-          if (item.title && dbTitle && item.title.trim().toLowerCase() === dbTitle) return true
-          return false
-        })
+      const matched = candidatePool.find((ev) => {
+        const cleanItemId = extractCleanId(ev.id)
+        if (cleanItemId && cleanDbId && cleanItemId === cleanDbId) return true
+        if (ev.id === item.id) return true
+        if (dbTitle && ev.title && ev.title.trim().toLowerCase() === dbTitle) return true
+        return false
+      })
 
-        if (matched) {
-          const key = matched.id
-          if (!usedKeys.has(key)) {
-            usedKeys.add(key)
-            result.push({
-              ...matched,
-              viewCount: Number(record.view_count) || 0,
-            })
-          }
-        } else if (record.id) {
-          // TourAPI 목록에 아직 로드되지 않은 축제라도 Supabase 레코드 자체로 유효한 카드 구성
-          const fallbackEvent: PoppleEvent = {
-            id: String(record.id),
-            title: record.title || '인기 축제',
-            date: record.date || '진행 중',
-            location: record.location || '전국',
-            price: record.price || '무료',
-            imageUrl: record.imageUrl || record.poster || '/events/rock-festival.png',
-            poster: record.poster || record.imageUrl || '/events/rock-festival.png',
-            tags: ['인기축제', 'HOT', '주간랭킹'],
-            category: '축제/행사',
-            description: record.description || `${record.title || '인기 축제'} 상세 정보`,
-            viewCount: Number(record.view_count) || 0,
-          }
-          const key = fallbackEvent.id
-          if (!usedKeys.has(key)) {
-            usedKeys.add(key)
-            result.push(fallbackEvent)
-          }
+      if (matched) {
+        const key = matched.id
+        if (!usedKeys.has(key)) {
+          usedKeys.add(key)
+          result.push({
+            ...matched,
+            viewCount: item.count,
+          })
+        }
+      } else if (item.record) {
+        const fallbackEvent: PoppleEvent = {
+          id: String(item.id),
+          title: (item.record.title as string) || '인기 축제',
+          date: (item.record.date as string) || '진행 중',
+          location: (item.record.location as string) || '전국',
+          price: (item.record.price as string) || '무료',
+          imageUrl: (item.record.imageUrl as string) || (item.record.poster as string) || '/events/rock-festival.png',
+          poster: (item.record.poster as string) || (item.record.imageUrl as string) || '/events/rock-festival.png',
+          tags: ['인기축제', 'HOT', '주간랭킹'],
+          category: '축제/행사',
+          description: (item.record.description as string) || `${item.record.title || '인기 축제'} 상세 정보`,
+          viewCount: item.count,
+        }
+        const key = fallbackEvent.id
+        if (!usedKeys.has(key)) {
+          usedKeys.add(key)
+          result.push(fallbackEvent)
         }
       }
     }
 
-    // 2. 5위까지 부족한 슬롯은 실제 TourAPI 데이터(candidatePool)의 축제로 순차 보충 (더미/목업 배제)
+    // limit까지 부족한 슬롯은 실제 TourAPI 데이터(candidatePool)의 축제로 순차 보충
     if (result.length < limit && candidatePool.length > 0) {
       for (const item of candidatePool) {
         if (result.length >= limit) break
@@ -280,6 +333,151 @@ export async function fetchWeeklyTopFestivals(
   } catch (err) {
     console.warn('[ranking] fetchWeeklyTopFestivals error:', err)
     return computeWeeklyRanking(candidatePool, limit)
+  }
+}
+
+/**
+ * [Supabase 실시간 연동] '오늘 실시간 인기 행사 (급상승)' 산출
+ * - 오늘 날짜(view_date = current_date)의 조회수가 가장 높은 순으로 정렬
+ * - 오늘 데이터가 적을 경우 최근 데이터/자정 이후 클릭 로그 기준 보완
+ */
+export async function fetchDailyLiveFestivals(
+  candidatePool: PoppleEvent[] = [],
+  limit = 5,
+): Promise<PoppleEvent[]> {
+  try {
+    const now = new Date()
+    const todayMidnight = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime()
+    const todayIsoDate = now.toISOString().split('T')[0] // YYYY-MM-DD
+
+    // 1. festival_daily_views 테이블에서 오늘 날짜 데이터 조회
+    const { data: todayDailyRows } = await supabase
+      .from('festival_daily_views')
+      .select('festival_id, view_count, view_date')
+      .eq('view_date', todayIsoDate)
+
+    // 2. 오늘 자정 이후 로컬 클릭 로그
+    const todayLogs = getEventClickLogs().filter((l) => l.timestamp >= todayMidnight)
+
+    // 3. festivals 테이블에서 최근 수정/조회된 축제 조회
+    const { data: recentFestivals } = await supabase
+      .from('festivals')
+      .select('*')
+      .order('updated_at', { ascending: false })
+      .limit(10)
+
+    // 4. 오늘 조회수 집계
+    const countsMap = new Map<string, { count: number; record?: Record<string, unknown> }>()
+
+    if (Array.isArray(todayDailyRows) && todayDailyRows.length > 0) {
+      for (const row of todayDailyRows) {
+        if (!row.festival_id) continue
+        const fid = String(row.festival_id)
+        if (fid.startsWith('test_')) continue
+        const current = countsMap.get(fid) || { count: 0 }
+        current.count += Number(row.view_count) || 0
+        countsMap.set(fid, current)
+      }
+    }
+
+    // 오늘 로컬 클릭 가산
+    for (const log of todayLogs) {
+      const fid = String(log.id)
+      const current = countsMap.get(fid) || { count: 0 }
+      current.count += 1
+      countsMap.set(fid, current)
+    }
+
+    // 오늘 데이터가 부족할 경우: 오늘 업데이트되었거나 가장 활발한 축제로 보완
+    if (Array.isArray(recentFestivals)) {
+      for (const row of recentFestivals) {
+        if (!row.id || String(row.id).startsWith('test_') || row.title === '테스트') continue
+        const fid = String(row.id)
+        const current = countsMap.get(fid) || { count: 0, record: row }
+        current.record = row
+
+        // 오늘 수정된 레코드면 오늘 활동 가중치 부여
+        const rowUpdatedTime = row.updated_at ? new Date(row.updated_at).getTime() : 0
+        if (rowUpdatedTime >= todayMidnight) {
+          current.count = Math.max(current.count, 1)
+        }
+        countsMap.set(fid, current)
+      }
+    }
+
+    const sortedDbItems = Array.from(countsMap.entries())
+      .map(([id, info]) => ({ id, ...info }))
+      .sort((a, b) => b.count - a.count)
+
+    const result: PoppleEvent[] = []
+    const usedKeys = new Set<string>()
+
+    for (const item of sortedDbItems) {
+      const cleanDbId = extractCleanId(item.id)
+      const dbTitle = item.record && typeof item.record.title === 'string'
+        ? item.record.title.trim().toLowerCase()
+        : ''
+
+      const matched = candidatePool.find((ev) => {
+        const cleanItemId = extractCleanId(ev.id)
+        if (cleanItemId && cleanDbId && cleanItemId === cleanDbId) return true
+        if (ev.id === item.id) return true
+        if (dbTitle && ev.title && ev.title.trim().toLowerCase() === dbTitle) return true
+        return false
+      })
+
+      if (matched) {
+        const key = matched.id
+        if (!usedKeys.has(key)) {
+          usedKeys.add(key)
+          result.push({
+            ...matched,
+            viewCount: item.count,
+          })
+        }
+      } else if (item.record) {
+        const fallbackEvent: PoppleEvent = {
+          id: String(item.id),
+          title: (item.record.title as string) || '인기 축제',
+          date: (item.record.date as string) || '진행 중',
+          location: (item.record.location as string) || '전국',
+          price: (item.record.price as string) || '무료',
+          imageUrl: (item.record.imageUrl as string) || (item.record.poster as string) || '/events/jazz-picnic.png',
+          poster: (item.record.poster as string) || (item.record.imageUrl as string) || '/events/jazz-picnic.png',
+          tags: ['실시간인기', '급상승'],
+          category: '축제/행사',
+          description: (item.record.description as string) || `${item.record.title || '인기 축제'} 상세 정보`,
+          viewCount: item.count,
+        }
+        const key = fallbackEvent.id
+        if (!usedKeys.has(key)) {
+          usedKeys.add(key)
+          result.push(fallbackEvent)
+        }
+      }
+    }
+
+    // 부족한 경우 candidatePool(실제 TourAPI)의 축제로 보완
+    if (result.length < limit && candidatePool.length > 0) {
+      for (const item of candidatePool) {
+        if (result.length >= limit) break
+        const cleanItemId = extractCleanId(item.id)
+        const isAlreadyAdded = result.some(
+          (r) =>
+            r.id === item.id ||
+            (cleanItemId && extractCleanId(r.id) === cleanItemId) ||
+            (r.title && item.title && r.title.trim().toLowerCase() === item.title.trim().toLowerCase()),
+        )
+        if (!isAlreadyAdded) {
+          result.push(item)
+        }
+      }
+    }
+
+    return result.slice(0, limit)
+  } catch (err) {
+    console.warn('[ranking] fetchDailyLiveFestivals error:', err)
+    return computeLiveNowRanking(candidatePool, limit)
   }
 }
 

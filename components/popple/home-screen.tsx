@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 import {
   Search,
@@ -24,6 +25,7 @@ import {
   computeLiveNowRanking,
   fetchGlobalViewCounts,
   fetchWeeklyTopFestivals,
+  fetchDailyLiveFestivals,
 } from '@/lib/ranking'
 import {
   type ThemeDefinition,
@@ -49,6 +51,7 @@ export function HomeScreen({
   onOpenMy,
   onOpenCoupons,
 }: HomeScreenProps) {
+  const router = useRouter()
   const [keyword, setKeyword] = useState('')
   const [searchQuery, setSearchQuery] = useState('')
   const [searchResults, setSearchResults] = useState<PoppleEvent[]>([])
@@ -74,7 +77,7 @@ export function HomeScreen({
   const [currentSlideIndex, setCurrentSlideIndex] = useState(0)
   const [isPaused, setIsPaused] = useState(false)
 
-  // 1. 실시간 축제 풀(/api/festivals) 및 Supabase festivals 테이블 view_count 랭킹 1,2,3위 바인딩
+  // 1. 실시간 축제 풀(/api/festivals) 로드 및 Supabase 실시간 랭킹 (주간 TOP 5 vs 당일 실시간 인기 분리)
   useEffect(() => {
     let isMounted = true
     async function loadFestivals() {
@@ -98,17 +101,23 @@ export function HomeScreen({
           }
         }
 
-        // Supabase festivals 테이블에서 view_count 기준 상위 5개를 조회하여 TourAPI와 결합 (1위, 2위, 3위 바인딩)
-        const topFestivals = await fetchWeeklyTopFestivals(festivalsList, 5)
+        // 주간 TOP 5 (최근 7일간 조회수 누적) 및 오늘 실시간 인기 (당일 조회수) 병렬 조회
+        const [topFestivals, liveDailyFestivals] = await Promise.all([
+          fetchWeeklyTopFestivals(festivalsList, 5),
+          fetchDailyLiveFestivals(festivalsList, 5),
+        ])
+
         if (isMounted) {
           setWeeklyTopEvents(topFestivals)
-          setLiveTrendingEvents(computeLiveNowRanking(festivalsList, 5, viewCounts))
+          setLiveTrendingEvents(liveDailyFestivals)
         }
       } catch (err) {
         console.warn('[HomeScreen] festivals fetch error:', err)
         if (isMounted) {
           const fallbackTop = await fetchWeeklyTopFestivals([], 5)
+          const fallbackDaily = await fetchDailyLiveFestivals([], 5)
           setWeeklyTopEvents(fallbackTop)
+          setLiveTrendingEvents(fallbackDaily)
         }
       }
     }
@@ -123,13 +132,14 @@ export function HomeScreen({
   useEffect(() => {
     const syncRanking = async () => {
       try {
-        const [counts, topFestivals] = await Promise.all([
+        const [counts, topFestivals, liveDailyFestivals] = await Promise.all([
           fetchGlobalViewCounts(),
           fetchWeeklyTopFestivals(allFestivals, 5),
+          fetchDailyLiveFestivals(allFestivals, 5),
         ])
         setGlobalCounts(counts)
         setWeeklyTopEvents(topFestivals)
-        setLiveTrendingEvents(computeLiveNowRanking(allFestivals, 5, counts))
+        setLiveTrendingEvents(liveDailyFestivals)
       } catch (err) {
         console.warn('[HomeScreen] syncRanking error:', err)
       }
@@ -558,8 +568,9 @@ export function HomeScreen({
                 </div>
                 <button
                   type="button"
-                  onClick={() => handleSearch('페스티벌')}
-                  className="text-xs font-bold text-slate-400 hover:text-slate-700 flex items-center gap-0.5"
+                  onClick={() => router.push('/ranking?type=weekly')}
+                  className="text-xs font-bold text-slate-400 hover:text-slate-700 flex items-center gap-0.5 cursor-pointer"
+                  title="이번 주 가장 핫한 축제 TOP 5 전체보기"
                 >
                   TOP 5 <ChevronRight className="size-3.5" />
                 </button>
@@ -629,15 +640,8 @@ export function HomeScreen({
                               <h3 className="text-xl font-black text-white leading-tight line-clamp-1">
                                 {ev.title}
                               </h3>
-                              <div className="mt-2 flex items-center gap-1.5 flex-wrap">
-                                <div className="inline-flex items-center rounded-md bg-slate-900/75 backdrop-blur-xs px-2.5 py-1 text-[11px] font-semibold text-white border border-white/20">
-                                  {ev.date}
-                                </div>
-                                {Boolean(ev.viewCount && ev.viewCount > 0) && (
-                                  <span className="inline-flex items-center gap-1 rounded-md bg-[#1884F7] px-2 py-0.5 text-[11px] font-bold text-white shadow-xs">
-                                    <span>조회 {ev.viewCount}회</span>
-                                  </span>
-                                )}
+                              <div className="mt-2 inline-flex items-center rounded-md bg-slate-900/75 backdrop-blur-xs px-2.5 py-1 text-[11px] font-semibold text-white border border-white/20">
+                                {ev.date}
                               </div>
                             </div>
                           </div>
@@ -714,8 +718,9 @@ export function HomeScreen({
                 </div>
                 <button
                   type="button"
-                  onClick={() => handleSearch('인기')}
-                  className="size-8 rounded-full border border-slate-200 flex items-center justify-center text-slate-400 hover:text-slate-700 transition-colors"
+                  onClick={() => router.push('/ranking?type=daily')}
+                  className="size-8 rounded-full border border-slate-200 flex items-center justify-center text-slate-400 hover:text-slate-700 transition-colors cursor-pointer"
+                  title="오늘 실시간 인기 행사 전체보기"
                 >
                   <ChevronRight className="size-4" />
                 </button>
