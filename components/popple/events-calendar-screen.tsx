@@ -715,6 +715,7 @@ export function EventsCalendarScreen({
                           fill
                           sizes="112px"
                           unoptimized
+                          referrerPolicy="no-referrer"
                           className="object-cover transition-transform duration-300 group-hover:scale-105"
                         />
                       </div>

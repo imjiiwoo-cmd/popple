@@ -8,18 +8,11 @@ const nextConfig = {
     remotePatterns: [
       {
         protocol: 'https',
-        hostname: 'i.imgur.com',
-        pathname: '/**',
-      },
-      {
-        protocol: 'https',
-        hostname: 'tong.visitkorea.or.kr',
-        pathname: '/**',
+        hostname: '**',
       },
       {
         protocol: 'http',
-        hostname: 'tong.visitkorea.or.kr',
-        pathname: '/**',
+        hostname: '**',
       },
     ],
   },

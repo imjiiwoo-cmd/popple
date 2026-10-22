@@ -343,6 +343,7 @@ export function EventDetail({ event, onBack }: EventDetailProps) {
               alt={`${event.title} 대표 이미지`}
               fill
               unoptimized
+              referrerPolicy="no-referrer"
               onError={() => setImageFailed(true)}
               className="object-cover object-center"
               priority

@@ -110,10 +110,11 @@ export function PopupsScreen({
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
-  // 4. 지역 필터링
+  // 4. 지역 필터링 (정확한 지역 매칭 및 태그/주소 연동)
   const filteredPopups = useMemo(() => {
     if (selectedRegion === '전체') return popups
     return popups.filter((p) => {
+      if ((p as any).region === selectedRegion) return true
       const text = `${p.title} ${p.location} ${(p.tags || []).join(' ')}`.toLowerCase()
       if (selectedRegion === '더현대') {
         return text.includes('더현대') || text.includes('여의도')
@@ -272,6 +273,11 @@ export function PopupsScreen({
                         fill
                         sizes="112px"
                         unoptimized
+                        referrerPolicy="no-referrer"
+                        onError={(e) => {
+                          const target = e.currentTarget as HTMLImageElement
+                          target.src = '/events/media-art.png'
+                        }}
                         className="object-cover transition-transform duration-300 group-hover:scale-105"
                       />
                     </div>
@@ -301,7 +307,7 @@ export function PopupsScreen({
                         </div>
 
                         {/* 상세 정보: 기간, 입장료, 장소 */}
-                        <div className="flex flex-col gap-1 mt-2.5 text-xs">
+                        <div className="flex flex-col gap-1 mt-2 text-xs">
                           <div className="flex items-center">
                             <span className="w-11 text-slate-400 font-medium shrink-0">
                               기간
@@ -314,19 +320,33 @@ export function PopupsScreen({
                             <span className="w-11 text-slate-400 font-medium shrink-0">
                               입장료
                             </span>
-                            <span className="font-bold text-slate-700">
-                              {ev.price || '무료'}
+                            <span className="font-bold text-slate-700 truncate">
+                              {(ev as any).fee || ev.price || '무료'}
                             </span>
                           </div>
                           <div className="flex items-center text-slate-500 font-medium mt-0.5">
                             <MapPin className="size-3 text-slate-400 shrink-0 mr-1" />
                             <span className="truncate">{ev.location}</span>
                           </div>
+
+                          {/* 해시태그 뱃지 */}
+                          {ev.tags && ev.tags.length > 0 && (
+                            <div className="flex flex-wrap gap-1 mt-1 pt-0.5">
+                              {ev.tags.slice(0, 3).map((tag) => (
+                                <span
+                                  key={tag}
+                                  className="rounded bg-sky-50 px-1.5 py-0.5 text-[10px] font-medium text-[#1884F7]"
+                                >
+                                  {tag.startsWith('#') ? tag : `#${tag}`}
+                                </span>
+                              ))}
+                            </div>
+                          )}
                         </div>
                       </div>
 
-                      {/* 하단: '상세 안내 >' 및 원문 안내 링크 버튼 */}
-                      <div className="flex items-center gap-1.5 mt-3">
+                      {/* 하단: '상세 안내 >' 및 원문/예약 링크 버튼 */}
+                      <div className="flex items-center gap-1.5 mt-2.5">
                         <button
                           type="button"
                           onClick={(e) => {
@@ -339,17 +359,17 @@ export function PopupsScreen({
                           <ChevronRight className="size-3.5 text-[#1884F7] stroke-[2.5]" />
                         </button>
 
-                        {ev.websiteUrl && (
+                        {((ev as any).reservationUrl || ev.websiteUrl) && (
                           <a
-                            href={ev.websiteUrl}
+                            href={(ev as any).reservationUrl || ev.websiteUrl}
                             target="_blank"
                             rel="noopener noreferrer"
                             onClick={(e) => e.stopPropagation()}
                             className="bg-slate-100 hover:bg-slate-200 active:scale-[0.98] text-slate-700 rounded-xl px-2.5 py-2 flex items-center gap-1 text-xs font-bold transition-colors shrink-0"
-                            title="네이버 블로그 / 공식 안내 원문 새 창 열기"
+                            title="네이버 예약 / 공식 안내 원문 새 창 열기"
                           >
                             <ExternalLink className="size-3.5" />
-                            <span>원문</span>
+                            <span>예약/원문</span>
                           </a>
                         )}
                       </div>
