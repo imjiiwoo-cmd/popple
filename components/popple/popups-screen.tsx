@@ -17,8 +17,9 @@ import {
   Camera,
   Bell,
   RefreshCw,
+  ImageIcon,
 } from 'lucide-react'
-import type { PoppleEvent } from '@/lib/events'
+import { type PoppleEvent, sortPopupsVisualFirst } from '@/lib/events'
 
 interface PopupsScreenProps {
   onBack: () => void
@@ -45,6 +46,7 @@ export function PopupsScreen({
   const [isLoading, setIsLoading] = useState(true)
   const [selectedRegion, setSelectedRegion] = useState<string>('전체')
   const [bookmarkedMap, setBookmarkedMap] = useState<Record<string, boolean>>({})
+  const [imageFailedMap, setImageFailedMap] = useState<Record<string, boolean>>({})
   const [showScrollTop, setShowScrollTop] = useState(false)
 
   // 1. 팝업스토어 데이터 로드 (/api/popups)
@@ -110,18 +112,23 @@ export function PopupsScreen({
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
-  // 4. 지역 필터링 (정확한 지역 매칭 및 태그/주소 연동)
+  // 4. 지역 필터링 및 시각적 우선 정렬 (Visual-first sorting)
+  // 1순위: 유효한 포스터 이미지 우선 상단 배치
+  // 2순위: 이미지 없음/플레이스홀더 하단 배치 (각 그룹 내부 D-day 마감 임박순)
   const filteredPopups = useMemo(() => {
-    if (selectedRegion === '전체') return popups
-    return popups.filter((p) => {
-      if ((p as any).region === selectedRegion) return true
-      const text = `${p.title} ${p.location} ${(p.tags || []).join(' ')}`.toLowerCase()
-      if (selectedRegion === '더현대') {
-        return text.includes('더현대') || text.includes('여의도')
-      }
-      return text.includes(selectedRegion.toLowerCase())
-    })
-  }, [popups, selectedRegion])
+    let list = popups
+    if (selectedRegion !== '전체') {
+      list = popups.filter((p) => {
+        if ((p as any).region === selectedRegion) return true
+        const text = `${p.title} ${p.location} ${(p.tags || []).join(' ')}`.toLowerCase()
+        if (selectedRegion === '더현대') {
+          return text.includes('더현대') || text.includes('여의도')
+        }
+        return text.includes(selectedRegion.toLowerCase())
+      })
+    }
+    return sortPopupsVisualFirst(list, imageFailedMap)
+  }, [popups, selectedRegion, imageFailedMap])
 
   return (
     <div className="relative flex flex-col min-h-dvh bg-[#F8FAFC] text-slate-900 pb-28">
@@ -261,25 +268,35 @@ export function PopupsScreen({
                     onClick={() => onSelectEvent(ev)}
                     className="group relative bg-white rounded-3xl p-3 border border-slate-100 shadow-[0_4px_16px_rgba(0,0,0,0.03)] flex gap-3.5 hover:shadow-md transition-all active:scale-[0.99] cursor-pointer"
                   >
-                    {/* 좌측: 둥근 모서리의 세로형 포스터 썸네일 이미지 */}
-                    <div className="relative w-[112px] min-w-[112px] h-[190px] rounded-2xl overflow-hidden bg-slate-100 shrink-0">
+                    {/* 좌측: 둥근 모서리의 세로형 포스터 썸네일 이미지 또는 깔끔한 중립 Fallback UI */}
+                    <div className="relative w-[112px] min-w-[112px] h-[190px] rounded-2xl overflow-hidden bg-slate-100 shrink-0 border border-slate-100/80">
                       <span className="absolute top-2.5 left-2.5 z-10 px-2 py-0.5 rounded-lg text-[10px] font-black text-white shadow-xs bg-[#1884F7]">
                         팝업
                       </span>
 
-                      <Image
-                        src={ev.imageUrl || ev.poster || '/events/media-art.png'}
-                        alt={ev.title}
-                        fill
-                        sizes="112px"
-                        unoptimized
-                        referrerPolicy="no-referrer"
-                        onError={(e) => {
-                          const target = e.currentTarget as HTMLImageElement
-                          target.src = '/events/media-art.png'
-                        }}
-                        className="object-cover transition-transform duration-300 group-hover:scale-105"
-                      />
+                      {ev.imageUrl && ev.imageUrl.trim() && !imageFailedMap[ev.id] && ev.imageUrl !== '/events/media-art.png' ? (
+                        <Image
+                          src={ev.imageUrl}
+                          alt={ev.title}
+                          fill
+                          sizes="112px"
+                          unoptimized
+                          referrerPolicy="no-referrer"
+                          onError={() => {
+                            setImageFailedMap((prev) => ({ ...prev, [ev.id]: true }))
+                          }}
+                          className="object-cover transition-transform duration-300 group-hover:scale-105"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex flex-col items-center justify-center gap-2 bg-slate-100/90 p-2 text-center select-none">
+                          <div className="size-10 rounded-full bg-slate-200/70 flex items-center justify-center text-slate-400">
+                            <ImageIcon className="size-5 stroke-[1.8] text-slate-400" />
+                          </div>
+                          <span className="text-[11px] font-bold text-slate-400 tracking-tight leading-tight">
+                            포스터 준비중
+                          </span>
+                        </div>
+                      )}
                     </div>
 
                     {/* 우측: 행사명, 기간, 입장료, 장소 텍스트 및 액션 버튼 */}

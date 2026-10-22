@@ -14,8 +14,9 @@ import {
   Users,
   User,
   Check,
+  ImageIcon,
 } from 'lucide-react'
-import type { PoppleEvent } from '@/lib/events'
+import { type PoppleEvent, sortPopupsVisualFirst } from '@/lib/events'
 import type { CalendarFestival } from '@/app/api/festivals/route'
 
 interface EventsCalendarScreenProps {
@@ -191,6 +192,7 @@ export function EventsCalendarScreen({
   const [festivals, setFestivals] = useState<CalendarFestival[]>([])
   const [popups, setPopups] = useState<PoppleEvent[]>([])
   const [isLoading, setIsLoading] = useState(true)
+  const [popupImageFailedMap, setPopupImageFailedMap] = useState<Record<string, boolean>>({})
 
   // 5. 플로팅 최상단 스크롤 버튼 표시 상태
   const [showScrollTop, setShowScrollTop] = useState(false)
@@ -400,12 +402,15 @@ export function EventsCalendarScreen({
     return withEvents.length > 0 ? withEvents : weekFestivalGroups
   }, [weekFestivalGroups, selectedEventType])
 
-  // 팝업스토어 필터링 (지역 필터 연동)
+  // 팝업스토어 필터링 및 시각적 우선 정렬 (Visual-first sorting)
   const filteredPopups = useMemo(() => {
     if (selectedEventType !== '팝업스토어') return []
-    if (selectedRegion === '전체 지역') return popups
-    return popups.filter((p) => matchesRegion(p.location, p.title, selectedRegion))
-  }, [popups, selectedRegion, selectedEventType])
+    let list = popups
+    if (selectedRegion !== '전체 지역') {
+      list = popups.filter((p) => matchesRegion(p.location, p.title, selectedRegion))
+    }
+    return sortPopupsVisualFirst(list, popupImageFailedMap)
+  }, [popups, selectedRegion, selectedEventType, popupImageFailedMap])
 
   // 이번 주 총 행사 개수 (중복 제거)
   const totalEventsInWeek = useMemo(() => {
@@ -703,21 +708,35 @@ export function EventsCalendarScreen({
                       onClick={() => onSelectEvent(ev)}
                       className="group relative bg-white rounded-3xl p-3 border border-slate-100 shadow-[0_4px_16px_rgba(0,0,0,0.03)] flex gap-3.5 hover:shadow-md transition-all active:scale-[0.99] cursor-pointer"
                     >
-                      {/* 좌측: 둥근 모서리의 세로형 포스터 썸네일 이미지 */}
-                      <div className="relative w-[112px] min-w-[112px] h-[190px] rounded-2xl overflow-hidden bg-slate-100 shrink-0">
+                      {/* 좌측: 둥근 모서리의 세로형 포스터 썸네일 이미지 또는 깔끔한 중립 Fallback UI */}
+                      <div className="relative w-[112px] min-w-[112px] h-[190px] rounded-2xl overflow-hidden bg-slate-100 shrink-0 border border-slate-100/80">
                         <span className="absolute top-2.5 left-2.5 z-10 px-2 py-0.5 rounded-lg text-[10px] font-black text-white shadow-xs bg-[#1884F7]">
                           팝업
                         </span>
 
-                        <Image
-                          src={ev.imageUrl || ev.poster || '/events/media-art.png'}
-                          alt={ev.title}
-                          fill
-                          sizes="112px"
-                          unoptimized
-                          referrerPolicy="no-referrer"
-                          className="object-cover transition-transform duration-300 group-hover:scale-105"
-                        />
+                        {ev.imageUrl && ev.imageUrl.trim() && !popupImageFailedMap[ev.id] && ev.imageUrl !== '/events/media-art.png' ? (
+                          <Image
+                            src={ev.imageUrl}
+                            alt={ev.title}
+                            fill
+                            sizes="112px"
+                            unoptimized
+                            referrerPolicy="no-referrer"
+                            onError={() => {
+                              setPopupImageFailedMap((prev) => ({ ...prev, [ev.id]: true }))
+                            }}
+                            className="object-cover transition-transform duration-300 group-hover:scale-105"
+                          />
+                        ) : (
+                          <div className="w-full h-full flex flex-col items-center justify-center gap-2 bg-slate-100/90 p-2 text-center select-none">
+                            <div className="size-10 rounded-full bg-slate-200/70 flex items-center justify-center text-slate-400">
+                              <ImageIcon className="size-5 stroke-[1.8] text-slate-400" />
+                            </div>
+                            <span className="text-[11px] font-bold text-slate-400 tracking-tight leading-tight">
+                              포스터 준비중
+                            </span>
+                          </div>
+                        )}
                       </div>
 
                       {/* 우측: 행사명, 기간, 입장료, 장소 텍스트 및 액션 버튼 */}

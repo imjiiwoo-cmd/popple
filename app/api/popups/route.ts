@@ -1,5 +1,5 @@
 import { GoogleGenAI } from '@google/genai'
-import type { PoppleEvent } from '@/lib/events'
+import { type PoppleEvent, sortPopupsVisualFirst } from '@/lib/events'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 3600 // 1시간 캐싱 적용
@@ -12,91 +12,7 @@ export interface PopupItem extends PoppleEvent {
 }
 
 // -------------------------------------------------------------
-// [3순위: 행사 테마별 정밀 Unsplash 키워드 매칭 풀 (최후의 보루)]
-// -------------------------------------------------------------
-const THEMED_FALLBACK_IMAGES: Record<string, string[]> = {
-  toy: [
-    'https://images.unsplash.com/photo-1608889476561-6242cfdbf622?w=600&auto=format&fit=crop&q=80', // designer vinyl art toy
-    'https://images.unsplash.com/photo-1566576912321-d58ddd743358?w=600&auto=format&fit=crop&q=80', // vinyl figure
-    'https://images.unsplash.com/photo-1585366119957-e9730b6d0f60?w=600&auto=format&fit=crop&q=80', // lego bricks & minifigures
-  ],
-  character: [
-    'https://images.unsplash.com/photo-1569701813229-33284b643e3c?w=600&auto=format&fit=crop&q=80', // cute pink character (잔망루피/산리오)
-    'https://images.unsplash.com/photo-1613771404784-3a5686aa2be3?w=600&auto=format&fit=crop&q=80', // pokemon yellow creature
-    'https://images.unsplash.com/photo-1534447677768-be436bb09401?w=600&auto=format&fit=crop&q=80', // cute character art
-    'https://images.unsplash.com/photo-1579783902614-a3fb3927b675?w=600&auto=format&fit=crop&q=80', // anime illustration
-    'https://images.unsplash.com/photo-1513151233558-d860c5398176?w=600&auto=format&fit=crop&q=80', // celebration confetti
-  ],
-  bakery_food: [
-    'https://images.unsplash.com/photo-1509440159596-0249088772ff?w=600&auto=format&fit=crop&q=80', // fresh bagels & bread (런던베이글)
-    'https://images.unsplash.com/photo-1555507036-ab1f4038808a?w=600&auto=format&fit=crop&q=80', // bakery pastry
-    'https://images.unsplash.com/photo-1551024709-8f23befc6f87?w=600&auto=format&fit=crop&q=80', // gourmet donuts
-    'https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?w=600&auto=format&fit=crop&q=80', // coffee cafe
-  ],
-  beauty: [
-    'https://images.unsplash.com/photo-1592945403244-b3fbafd7f539?w=600&auto=format&fit=crop&q=80', // amber perfume bottle (르라보/탬버린즈)
-    'https://images.unsplash.com/photo-1563245372-f21724e3856d?w=600&auto=format&fit=crop&q=80', // candle & scent
-    'https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?w=600&auto=format&fit=crop&q=80', // cosmetics makeup (무신사뷰티)
-    'https://images.unsplash.com/photo-1541701494587-cb58502866ab?w=600&auto=format&fit=crop&q=80', // floral garden art (디올 성수)
-    'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=600&auto=format&fit=crop&q=80', // gold jewelry (샤넬 코코크러쉬)
-  ],
-  fashion: [
-    'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=600&auto=format&fit=crop&q=80', // red sneakers (나이키)
-    'https://images.unsplash.com/photo-1511499767150-a48a237f0083?w=600&auto=format&fit=crop&q=80', // chic eyewear (젠틀몬스터 x 마르지엘라)
-    'https://images.unsplash.com/photo-1508700115892-45ecd05ae2ad?w=600&auto=format&fit=crop&q=80', // futuristic fashion space (아더에러)
-    'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=600&auto=format&fit=crop&q=80', // vinyl record (무신사 테라스)
-  ],
-  tech_ent: [
-    'https://images.unsplash.com/photo-1574375927938-d5a98e8ffe85?w=600&auto=format&fit=crop&q=80', // netflix neon cinema
-    'https://images.unsplash.com/photo-1510519138195-068d82f0f48d?w=600&auto=format&fit=crop&q=80', // apple creative studio
-    'https://images.unsplash.com/photo-1612287232077-e613c2c10b7a?w=600&auto=format&fit=crop&q=80', // nintendo gaming console
-  ],
-}
-
-export function getThemedFallbackImage(title: string, tags: string[] = [], index = 0): string {
-  const combined = `${title} ${tags.join(' ')}`.toLowerCase()
-
-  // 1) 피규어 / 토이 / 레고
-  if (/피규어|토이|팝마트|레고|블라인드|toy|figure|브릭|미니피겨/i.test(combined)) {
-    const list = THEMED_FALLBACK_IMAGES.toy
-    return list[index % list.length]
-  }
-
-  // 2) 캐릭터 / 만화 / 애니메이션
-  if (/캐릭터|만화|루피|잔망루피|산리오|키티|쿠로미|시나모롤|포켓몬|피카츄|디즈니|픽사|애니메이션|라인프렌즈|미니니|bt21|카카오|춘식이|닌텐도|마리오|최고심|플레이브/i.test(combined)) {
-    const list = THEMED_FALLBACK_IMAGES.character
-    return list[index % list.length]
-  }
-
-  // 3) 베이커리 / 푸드 / 카페 / 디저트
-  if (/베이커리|베이글|빵|디저트|푸드|도넛|카페|커피|스타벅스|스낵|런던베이글|미트볼|나이스웨더|오설록|티|식음료/i.test(combined)) {
-    const list = THEMED_FALLBACK_IMAGES.bakery_food
-    return list[index % list.length]
-  }
-
-  // 4) 뷰티 / 화장품 / 향수
-  if (/뷰티|화장품|향수|퍼퓸|프래그런스|스킨케어|메이크업|샤넬|디올|탬버린즈|르라보|아모레|립스틱|캔들/i.test(combined)) {
-    const list = THEMED_FALLBACK_IMAGES.beauty
-    return list[index % list.length]
-  }
-
-  // 5) 패션 / 의류 / 스니커즈 / 아이웨어
-  if (/패션|의류|옷|신발|스니커즈|나이키|아더에러|마르지엘라|젠틀몬스터|아이웨어|선글라스|무신사|빈티지|lp|바이닐/i.test(combined)) {
-    const list = THEMED_FALLBACK_IMAGES.fashion
-    return list[index % list.length]
-  }
-
-  // 6) 테크 / 엔터 / 미디어
-  if (/넷플릭스|애플|스튜디오|게임|콘서트|체험|미디어/i.test(combined)) {
-    const list = THEMED_FALLBACK_IMAGES.tech_ent
-    return list[index % list.length]
-  }
-
-  return THEMED_FALLBACK_IMAGES.beauty[0]
-}
-
-// -------------------------------------------------------------
-// [1순위: 공식 예약/원문 링크의 og:image 실제 크롤링]
+// [1순위: 공식 예약/원문 링크의 og:image 실제 크롤링 (1.5초 타임아웃)]
 // -------------------------------------------------------------
 async function extractOgImage(url: string): Promise<string | null> {
   if (!url || !url.startsWith('http')) return null
@@ -118,7 +34,7 @@ async function extractOgImage(url: string): Promise<string | null> {
         'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
         'Accept-Language': 'ko-KR,ko;q=0.9,en-US;q=0.8,en;q=0.7',
       },
-      signal: AbortSignal.timeout(2800),
+      signal: AbortSignal.timeout(1500),
       redirect: 'follow',
     })
 
@@ -154,13 +70,13 @@ async function extractOgImage(url: string): Promise<string | null> {
       }
     }
   } catch {
-    // 무시하고 2순위로 이동
+    // 1.5s 타임아웃 또는 네트워크 오류 시 즉시 null
   }
   return null
 }
 
 // -------------------------------------------------------------
-// [2순위: 네이버 이미지 검색 API (Search Image API) 연동]
+// [2순위: 네이버 이미지 검색 API (Search Image API) 연동 (1.5초 타임아웃)]
 // -------------------------------------------------------------
 async function fetchNaverSearchImage(
   query: string,
@@ -175,7 +91,7 @@ async function fetchNaverSearchImage(
         'X-Naver-Client-Secret': clientSecret,
       },
       next: { revalidate: 3600 },
-      signal: AbortSignal.timeout(2500),
+      signal: AbortSignal.timeout(1500),
     })
 
     if (res.ok) {
@@ -190,22 +106,21 @@ async function fetchNaverSearchImage(
       }
     }
   } catch {
-    // 무시하고 3순위로 이동
+    // 1.5s 타임아웃 또는 오류 시 즉시 null
   }
   return null
 }
 
 // -------------------------------------------------------------
-// [3단계 복합 이미지 해석기: 1순위 -> 2순위 -> 3순위]
+// [2단계 복합 포스터 해석기: og:image -> 네이버 이미지 검색 API]
+// 1.5초 지연 또는 미발견 시 엉뚱한 임의의 풍경 사진 대신 null 반환
 // -------------------------------------------------------------
 async function resolvePopupPosterImage(
   title: string,
   urls: (string | undefined)[],
   clientId?: string,
   clientSecret?: string,
-  tags: string[] = [],
-  index = 0,
-): Promise<string> {
+): Promise<string | null> {
   // [1순위: 공식 예약/원문 링크의 og:image 실제 크롤링]
   for (const url of urls) {
     if (!url || !url.startsWith('http')) continue
@@ -227,8 +142,8 @@ async function resolvePopupPosterImage(
     }
   }
 
-  // [3순위: 행사 테마별 정밀 Unsplash 키워드 매칭]
-  return getThemedFallbackImage(title, tags, index)
+  // 1.5초 지연/미발견 시 임의의 풍경 사진을 억지로 넣지 않고 null(포스터 준비중 상태) 반환
+  return null
 }
 
 // -------------------------------------------------------------
@@ -249,8 +164,8 @@ const MASTER_CURATED_POPUPS: PopupItem[] = [
     reservationUrl: 'https://m.booking.naver.com',
     websiteUrl: 'https://m.search.naver.com/search.naver?query=디올+성수+팝업스토어',
     officialQuery: '디올 성수 팝업스토어 포스터',
-    imageUrl: THEMED_FALLBACK_IMAGES.beauty[3],
-    poster: THEMED_FALLBACK_IMAGES.beauty[3],
+    imageUrl: '',
+    poster: '',
     category: '팝업스토어',
   },
   {
@@ -266,8 +181,8 @@ const MASTER_CURATED_POPUPS: PopupItem[] = [
     reservationUrl: 'https://www.tamburins.com',
     websiteUrl: 'https://www.tamburins.com',
     officialQuery: '탬버린즈 성수 팝업스토어 포스터',
-    imageUrl: THEMED_FALLBACK_IMAGES.beauty[1],
-    poster: THEMED_FALLBACK_IMAGES.beauty[1],
+    imageUrl: 'https://web-resource.tamburins.com/image/share_banner_ohand.png',
+    poster: 'https://web-resource.tamburins.com/image/share_banner_ohand.png',
     category: '팝업스토어',
   },
   {
@@ -283,8 +198,8 @@ const MASTER_CURATED_POPUPS: PopupItem[] = [
     reservationUrl: 'https://www.musinsa.com',
     websiteUrl: 'https://www.musinsa.com',
     officialQuery: '무신사 뷰티 페스타 성수 포스터',
-    imageUrl: THEMED_FALLBACK_IMAGES.beauty[2],
-    poster: THEMED_FALLBACK_IMAGES.beauty[2],
+    imageUrl: '',
+    poster: '',
     category: '팝업스토어',
   },
   {
@@ -300,8 +215,8 @@ const MASTER_CURATED_POPUPS: PopupItem[] = [
     reservationUrl: 'https://www.chanel.com',
     websiteUrl: 'https://www.chanel.com',
     officialQuery: '샤넬 코코크러쉬 성수 팝업 포스터',
-    imageUrl: THEMED_FALLBACK_IMAGES.beauty[4],
-    poster: THEMED_FALLBACK_IMAGES.beauty[4],
+    imageUrl: '',
+    poster: '',
     category: '팝업스토어',
   },
   {
@@ -317,8 +232,8 @@ const MASTER_CURATED_POPUPS: PopupItem[] = [
     reservationUrl: 'https://adererror.com',
     websiteUrl: 'https://adererror.com',
     officialQuery: '아더에러 성수 팝업스토어 포스터',
-    imageUrl: THEMED_FALLBACK_IMAGES.fashion[2],
-    poster: THEMED_FALLBACK_IMAGES.fashion[2],
+    imageUrl: 'https://d31flwjaqugbgy.cloudfront.net/s3-cloud-bucket-ader-user/seo/%EB%B8%94%EB%9E%99_%EC%A0%84%EC%8B%A0%EC%BB%B7_FINAL_%EC%BB%A8%ED%8E%8C%EC%99%84%EB%A3%8C_4x5+%EB%B3%B5%EC%82%AC.jpg',
+    poster: 'https://d31flwjaqugbgy.cloudfront.net/s3-cloud-bucket-ader-user/seo/%EB%B8%94%EB%9E%99_%EC%A0%84%EC%8B%A0%EC%BB%B7_FINAL_%EC%BB%A8%ED%8E%8C%EC%99%84%EB%A3%8C_4x5+%EB%B3%B5%EC%82%AC.jpg',
     category: '팝업스토어',
   },
   {
@@ -334,8 +249,8 @@ const MASTER_CURATED_POPUPS: PopupItem[] = [
     reservationUrl: 'https://www.ikea.com',
     websiteUrl: 'https://www.ikea.com',
     officialQuery: '이케아 성수 팝업스토어 포스터',
-    imageUrl: 'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=600&auto=format&fit=crop&q=80',
-    poster: 'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=600&auto=format&fit=crop&q=80',
+    imageUrl: '',
+    poster: '',
     category: '팝업스토어',
   },
 
@@ -353,8 +268,8 @@ const MASTER_CURATED_POPUPS: PopupItem[] = [
     reservationUrl: 'https://m.booking.naver.com',
     websiteUrl: 'https://m.search.naver.com/search.naver?query=더현대+서울+디즈니+팝업',
     officialQuery: '더현대 서울 디즈니 픽사 팝업스토어 포스터',
-    imageUrl: THEMED_FALLBACK_IMAGES.character[4],
-    poster: THEMED_FALLBACK_IMAGES.character[4],
+    imageUrl: '',
+    poster: '',
     category: '팝업스토어',
   },
   {
@@ -370,8 +285,8 @@ const MASTER_CURATED_POPUPS: PopupItem[] = [
     reservationUrl: 'https://popmart.co.kr',
     websiteUrl: 'https://popmart.co.kr',
     officialQuery: '더현대 서울 팝마트 팝업스토어 포스터',
-    imageUrl: THEMED_FALLBACK_IMAGES.toy[0], // Designer art toy
-    poster: THEMED_FALLBACK_IMAGES.toy[0],
+    imageUrl: '',
+    poster: '',
     category: '팝업스토어',
   },
   {
@@ -387,8 +302,8 @@ const MASTER_CURATED_POPUPS: PopupItem[] = [
     reservationUrl: 'https://m.booking.naver.com',
     websiteUrl: 'https://m.search.naver.com/search.naver?query=더현대+서울+잔망루피+팝업',
     officialQuery: '더현대 잔망루피 팝업스토어 포스터',
-    imageUrl: THEMED_FALLBACK_IMAGES.character[0], // Cute pink character
-    poster: THEMED_FALLBACK_IMAGES.character[0],
+    imageUrl: '',
+    poster: '',
     category: '팝업스토어',
   },
   {
@@ -404,8 +319,8 @@ const MASTER_CURATED_POPUPS: PopupItem[] = [
     reservationUrl: 'https://niceweather.co.kr',
     websiteUrl: 'https://niceweather.co.kr',
     officialQuery: '더현대 서울 나이스웨더 팝업 포스터',
-    imageUrl: THEMED_FALLBACK_IMAGES.bakery_food[2], // gourmet donuts
-    poster: THEMED_FALLBACK_IMAGES.bakery_food[2],
+    imageUrl: '',
+    poster: '',
     category: '팝업스토어',
   },
   {
@@ -421,8 +336,8 @@ const MASTER_CURATED_POPUPS: PopupItem[] = [
     reservationUrl: 'https://www.lelabofragrances.com',
     websiteUrl: 'https://www.lelabofragrances.com',
     officialQuery: '더현대 르라보 팝업스토어 포스터',
-    imageUrl: THEMED_FALLBACK_IMAGES.beauty[0], // Amber perfume bottle
-    poster: THEMED_FALLBACK_IMAGES.beauty[0],
+    imageUrl: '',
+    poster: '',
     category: '팝업스토어',
   },
   {
@@ -438,8 +353,8 @@ const MASTER_CURATED_POPUPS: PopupItem[] = [
     reservationUrl: 'https://m.booking.naver.com',
     websiteUrl: 'https://m.search.naver.com/search.naver?query=더현대+플레이브+팝업',
     officialQuery: '더현대 플레이브 팝업스토어 포스터',
-    imageUrl: 'https://images.unsplash.com/photo-1492684223066-81342ee5ff30?w=600&auto=format&fit=crop&q=80',
-    poster: 'https://images.unsplash.com/photo-1492684223066-81342ee5ff30?w=600&auto=format&fit=crop&q=80',
+    imageUrl: '',
+    poster: '',
     category: '팝업스토어',
   },
 
@@ -457,8 +372,8 @@ const MASTER_CURATED_POPUPS: PopupItem[] = [
     reservationUrl: 'https://m.booking.naver.com',
     websiteUrl: 'https://m.search.naver.com/search.naver?query=산리오+러버스+클럽+홍대',
     officialQuery: '홍대 산리오 러버스 클럽 팝업 포스터',
-    imageUrl: THEMED_FALLBACK_IMAGES.character[2], // cute character artwork
-    poster: THEMED_FALLBACK_IMAGES.character[2],
+    imageUrl: '',
+    poster: '',
     category: '팝업스토어',
   },
   {
@@ -474,8 +389,8 @@ const MASTER_CURATED_POPUPS: PopupItem[] = [
     reservationUrl: 'https://brand.naver.com/linefriends',
     websiteUrl: 'https://brand.naver.com/linefriends',
     officialQuery: '라인프렌즈 스퀘어 홍대 팝업스토어 포스터',
-    imageUrl: THEMED_FALLBACK_IMAGES.character[3], // anime character illustration
-    poster: THEMED_FALLBACK_IMAGES.character[3],
+    imageUrl: '',
+    poster: '',
     category: '팝업스토어',
   },
   {
@@ -491,8 +406,8 @@ const MASTER_CURATED_POPUPS: PopupItem[] = [
     reservationUrl: 'https://store.kakaofriends.com',
     websiteUrl: 'https://store.kakaofriends.com',
     officialQuery: '카카오프렌즈 홍대 춘식이 팝업 포스터',
-    imageUrl: THEMED_FALLBACK_IMAGES.character[4],
-    poster: THEMED_FALLBACK_IMAGES.character[4],
+    imageUrl: 'https://t1.kakaocdn.net/friends/www/talk/kakaofriends_talk_2018.png',
+    poster: 'https://t1.kakaocdn.net/friends/www/talk/kakaofriends_talk_2018.png',
     category: '팝업스토어',
   },
   {
@@ -508,8 +423,8 @@ const MASTER_CURATED_POPUPS: PopupItem[] = [
     reservationUrl: 'https://www.nintendo.co.kr',
     websiteUrl: 'https://www.nintendo.co.kr',
     officialQuery: '닌텐도 홍대 팝업스토어 포스터',
-    imageUrl: THEMED_FALLBACK_IMAGES.tech_ent[2], // gaming console
-    poster: THEMED_FALLBACK_IMAGES.tech_ent[2],
+    imageUrl: 'https://www.nintendo.co.kr/sns.png',
+    poster: 'https://www.nintendo.co.kr/sns.png',
     category: '팝업스토어',
   },
   {
@@ -525,8 +440,8 @@ const MASTER_CURATED_POPUPS: PopupItem[] = [
     reservationUrl: 'https://www.musinsaterrace.com',
     websiteUrl: 'https://www.musinsaterrace.com',
     officialQuery: '무신사 테라스 홍대 팝업스토어 포스터',
-    imageUrl: THEMED_FALLBACK_IMAGES.fashion[3], // vinyl record
-    poster: THEMED_FALLBACK_IMAGES.fashion[3],
+    imageUrl: '',
+    poster: '',
     category: '팝업스토어',
   },
 
@@ -544,8 +459,8 @@ const MASTER_CURATED_POPUPS: PopupItem[] = [
     reservationUrl: 'https://www.uplus.co.kr',
     websiteUrl: 'https://m.search.naver.com/search.naver?query=일상비일상의틈+넷플릭스+팝업',
     officialQuery: '넷플릭스 일상비일상의틈 강남 팝업 포스터',
-    imageUrl: THEMED_FALLBACK_IMAGES.tech_ent[0], // netflix neon cinema
-    poster: THEMED_FALLBACK_IMAGES.tech_ent[0],
+    imageUrl: '',
+    poster: '',
     category: '팝업스토어',
   },
   {
@@ -561,8 +476,8 @@ const MASTER_CURATED_POPUPS: PopupItem[] = [
     reservationUrl: 'https://www.apple.com/kr/today',
     websiteUrl: 'https://www.apple.com/kr/today',
     officialQuery: '애플 강남 팝업스토어 포스터',
-    imageUrl: THEMED_FALLBACK_IMAGES.tech_ent[1], // apple creative studio
-    poster: THEMED_FALLBACK_IMAGES.tech_ent[1],
+    imageUrl: 'https://www.apple.com/today/assets/images/seoImages/landing/todayatapple_social.jpg',
+    poster: 'https://www.apple.com/today/assets/images/seoImages/landing/todayatapple_social.jpg',
     category: '팝업스토어',
   },
   {
@@ -578,8 +493,8 @@ const MASTER_CURATED_POPUPS: PopupItem[] = [
     reservationUrl: 'https://www.gentlemonster.com',
     websiteUrl: 'https://www.gentlemonster.com',
     officialQuery: '젠틀몬스터 마르지엘라 팝업스토어 포스터',
-    imageUrl: THEMED_FALLBACK_IMAGES.fashion[1], // chic eyewear
-    poster: THEMED_FALLBACK_IMAGES.fashion[1],
+    imageUrl: 'https://gm-prd-resource.gentlemonster.com/assets/common/og/prada_open_graph3.jpg',
+    poster: 'https://gm-prd-resource.gentlemonster.com/assets/common/og/prada_open_graph3.jpg',
     category: '팝업스토어',
   },
   {
@@ -595,8 +510,8 @@ const MASTER_CURATED_POPUPS: PopupItem[] = [
     reservationUrl: 'https://www.nike.com/kr',
     websiteUrl: 'https://www.nike.com/kr',
     officialQuery: '나이키 강남 팝업스토어 포스터',
-    imageUrl: THEMED_FALLBACK_IMAGES.fashion[0], // red sneakers
-    poster: THEMED_FALLBACK_IMAGES.fashion[0],
+    imageUrl: 'https://static.nike.com/a/images/w_1920,c_limit/wzrqsjqpg6pslrevtkpl/image.png',
+    poster: 'https://static.nike.com/a/images/w_1920,c_limit/wzrqsjqpg6pslrevtkpl/image.png',
     category: '팝업스토어',
   },
   {
@@ -612,8 +527,8 @@ const MASTER_CURATED_POPUPS: PopupItem[] = [
     reservationUrl: 'https://www.starbucks.co.kr',
     websiteUrl: 'https://www.starbucks.co.kr',
     officialQuery: '스타벅스 리저브 강남 팝업 포스터',
-    imageUrl: THEMED_FALLBACK_IMAGES.bakery_food[3], // specialty coffee
-    poster: THEMED_FALLBACK_IMAGES.bakery_food[3],
+    imageUrl: '',
+    poster: '',
     category: '팝업스토어',
   },
   {
@@ -629,8 +544,8 @@ const MASTER_CURATED_POPUPS: PopupItem[] = [
     reservationUrl: 'https://m.booking.naver.com',
     websiteUrl: 'https://m.search.naver.com/search.naver?query=아모레+도산+팝업스토어',
     officialQuery: '아모레퍼시픽 도산 팝업스토어 포스터',
-    imageUrl: 'https://images.unsplash.com/photo-1576092768241-dec231879fc3?w=600&auto=format&fit=crop&q=80',
-    poster: 'https://images.unsplash.com/photo-1576092768241-dec231879fc3?w=600&auto=format&fit=crop&q=80',
+    imageUrl: '',
+    poster: '',
     category: '팝업스토어',
   },
 
@@ -648,8 +563,8 @@ const MASTER_CURATED_POPUPS: PopupItem[] = [
     reservationUrl: 'https://pokemonkorea.co.kr',
     websiteUrl: 'https://pokemonkorea.co.kr',
     officialQuery: '잠실 롯데월드몰 포켓몬 팝업스토어 포스터',
-    imageUrl: THEMED_FALLBACK_IMAGES.character[1], // Pokemon yellow
-    poster: THEMED_FALLBACK_IMAGES.character[1],
+    imageUrl: 'https://data1.pokemonkorea.co.kr/2016/06/2016-06-20_00-44-39-61799-1466351079.jpg',
+    poster: 'https://data1.pokemonkorea.co.kr/2016/06/2016-06-20_00-44-39-61799-1466351079.jpg',
     category: '팝업스토어',
   },
   {
@@ -665,8 +580,8 @@ const MASTER_CURATED_POPUPS: PopupItem[] = [
     reservationUrl: 'https://www.lego.com/ko-kr',
     websiteUrl: 'https://www.lego.com/ko-kr',
     officialQuery: '잠실 레고 팝업스토어 포스터',
-    imageUrl: THEMED_FALLBACK_IMAGES.toy[2], // Lego bricks & figures
-    poster: THEMED_FALLBACK_IMAGES.toy[2],
+    imageUrl: '',
+    poster: '',
     category: '팝업스토어',
   },
   {
@@ -682,8 +597,8 @@ const MASTER_CURATED_POPUPS: PopupItem[] = [
     reservationUrl: 'https://catchtable.co.kr',
     websiteUrl: 'https://catchtable.co.kr',
     officialQuery: '런던베이글뮤지엄 잠실 팝업스토어 포스터',
-    imageUrl: THEMED_FALLBACK_IMAGES.bakery_food[0], // Fresh bagels
-    poster: THEMED_FALLBACK_IMAGES.bakery_food[0],
+    imageUrl: '',
+    poster: '',
     category: '팝업스토어',
   },
   {
@@ -699,8 +614,8 @@ const MASTER_CURATED_POPUPS: PopupItem[] = [
     reservationUrl: 'https://www.kakaopay.com',
     websiteUrl: 'https://www.kakaopay.com',
     officialQuery: '잠실 최고심 팝업스토어 포스터',
-    imageUrl: THEMED_FALLBACK_IMAGES.character[4], // celebration pop art
-    poster: THEMED_FALLBACK_IMAGES.character[4],
+    imageUrl: '',
+    poster: '',
     category: '팝업스토어',
   },
   {
@@ -716,8 +631,8 @@ const MASTER_CURATED_POPUPS: PopupItem[] = [
     reservationUrl: 'https://www.lwt.co.kr',
     websiteUrl: 'https://www.lwt.co.kr',
     officialQuery: '잠실 롯데월드타워 산리오 팝업스토어 포스터',
-    imageUrl: THEMED_FALLBACK_IMAGES.character[0], // cute pink character
-    poster: THEMED_FALLBACK_IMAGES.character[0],
+    imageUrl: '',
+    poster: '',
     category: '팝업스토어',
   },
 ]
@@ -774,7 +689,6 @@ async function curateWithGemini(apiKey: string): Promise<PopupItem[]> {
             const region = (item.region || '성수').trim()
             const id = item.id || `popup_${idx}_${Date.now()}`
             const fee = item.fee || '무료 관람 (현장 대기)'
-            const fallbackPoster = getThemedFallbackImage(item.title || '', item.tags || [], idx)
 
             return {
               id,
@@ -792,8 +706,8 @@ async function curateWithGemini(apiKey: string): Promise<PopupItem[]> {
                 'https://m.search.naver.com/search.naver?query=' +
                   encodeURIComponent(item.title || '팝업스토어'),
               officialQuery: item.officialQuery || `${item.title} 포스터`,
-              imageUrl: fallbackPoster,
-              poster: fallbackPoster,
+              imageUrl: '',
+              poster: '',
               category: '팝업스토어',
             } as PopupItem
           })
@@ -844,31 +758,37 @@ export async function GET(request: Request) {
     const clientSecret = process.env.NAVER_CLIENT_SECRET
 
     try {
-      const resolvePromises = popupsPool.map(async (p, idx) => {
+      const resolvePromises = popupsPool.map(async (p) => {
+        // 이미 유효한 공식 이미지가 있는 경우 스킵
+        if (p.imageUrl && p.imageUrl.startsWith('http') && !p.imageUrl.includes('unsplash.com')) {
+          return
+        }
         const resolved = await resolvePopupPosterImage(
           p.title,
           [p.reservationUrl, p.websiteUrl],
           clientId,
           clientSecret,
-          p.tags || [],
-          idx,
         )
         if (resolved) {
           p.imageUrl = resolved
           p.poster = resolved
+        } else {
+          p.imageUrl = ''
+          p.poster = ''
         }
       })
 
-      // 비동기 병렬로 최대 4초간 이미지 해석 실행
+      // 비동기 병렬로 최대 1.8초간 이미지 해석 실행 (개별 1.5s 타임아웃과 연동)
       await Promise.race([
         Promise.allSettled(resolvePromises),
-        new Promise((resolve) => setTimeout(resolve, 4000)),
+        new Promise((resolve) => setTimeout(resolve, 1800)),
       ])
     } catch (err) {
       console.warn('[popple-popups] Poster image resolution error:', err)
     }
 
-    // 5) 캐시 저장 (1시간)
+    // 5) 시각적 우선 정렬 (Visual-first sorting) 적용 후 캐시 저장 (1시간)
+    popupsPool = sortPopupsVisualFirst(popupsPool)
     serverCachedPopups = popupsPool
     cacheExpiresAt = now + 3600 * 1000
   }
@@ -885,6 +805,9 @@ export async function GET(request: Request) {
       return combined.includes(regionParam.toLowerCase())
     })
   }
+
+  // 필터링 결과에도 시각적 우선 정렬 유지
+  filtered = sortPopupsVisualFirst(filtered)
 
   return Response.json({
     popups: filtered,

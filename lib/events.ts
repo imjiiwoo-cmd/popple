@@ -86,3 +86,79 @@ export const EVENTS = MOCK_EVENTS
 export function getEventById(id: string): PoppleEvent | undefined {
   return MOCK_EVENTS.find((event) => event.id === id)
 }
+
+/**
+ * 팝업스토어/행사 날짜에서 D-day 또는 마감 임박 점수를 계산
+ * - D-(\d+) 패턴 우선 (예: D-11 -> 11, D-14 -> 14)
+ * - 종료 날짜(YYYY.MM.DD) 기반 계산
+ * - 작은 숫자일수록 마감 임박
+ */
+export function parsePopupDeadlineScore(dateStr?: string): number {
+  if (!dateStr) return 999999
+
+  // 1) D-(\d+) 패턴 매칭 (예: D-11 -> 11)
+  const dDayMatch = dateStr.match(/D-(\d+)/i)
+  if (dDayMatch) {
+    return parseInt(dDayMatch[1], 10)
+  }
+
+  // 2) 종료 날짜(YYYY.MM.DD) 파싱
+  const dateMatches = dateStr.match(/\d{4}[.\s/-]+\d{1,2}[.\s/-]+\d{1,2}/g)
+  if (dateMatches && dateMatches.length > 0) {
+    const endDateStr = dateMatches[dateMatches.length - 1].replace(/[^\d]/g, '')
+    if (endDateStr.length === 8) {
+      const year = parseInt(endDateStr.slice(0, 4), 10)
+      const month = parseInt(endDateStr.slice(4, 6), 10) - 1
+      const day = parseInt(endDateStr.slice(6, 8), 10)
+      const endTimestamp = new Date(year, month, day).getTime()
+      const now = Date.now()
+      const diffDays = Math.ceil((endTimestamp - now) / (1000 * 60 * 60 * 24))
+      return diffDays > 0 ? diffDays : 900000 + Math.abs(diffDays)
+    }
+  }
+
+  // 3) '진행 중' 또는 날짜 파싱 불가 시
+  if (dateStr.includes('진행 중') || dateStr.includes('진행중')) {
+    return 1000
+  }
+
+  return 9999
+}
+
+/**
+ * 시각적 우선 정렬 (Visual-first sorting)
+ * 1순위: 유효한 포스터/썸네일 이미지(imageUrl)가 있는 행사 우선 상단 배치
+ * 2순위: 이미지가 없거나 기본 플레이스홀더인 행사는 하단 배치
+ * (각 그룹 내부에서는 D-day 마감 임박순 또는 최신순 유지)
+ */
+export function sortPopupsVisualFirst<T extends PoppleEvent>(
+  items: T[],
+  failedMap: Record<string, boolean> = {},
+): T[] {
+  return [...items].sort((a, b) => {
+    const hasImgA = Boolean(
+      a.imageUrl &&
+      a.imageUrl.trim() !== '' &&
+      !failedMap[a.id] &&
+      !a.imageUrl.includes('blank.gif') &&
+      a.imageUrl !== '/events/media-art.png'
+    )
+    const hasImgB = Boolean(
+      b.imageUrl &&
+      b.imageUrl.trim() !== '' &&
+      !failedMap[b.id] &&
+      !b.imageUrl.includes('blank.gif') &&
+      b.imageUrl !== '/events/media-art.png'
+    )
+
+    // 1순위: 유효 이미지 있는 행사 우선 상단 배치
+    if (hasImgA !== hasImgB) {
+      return hasImgA ? -1 : 1
+    }
+
+    // 각 그룹 내부에서는 D-day 마감 임박순 (작은 값 우선)
+    const scoreA = parsePopupDeadlineScore(a.date)
+    const scoreB = parsePopupDeadlineScore(b.date)
+    return scoreA - scoreB
+  })
+}

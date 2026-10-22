@@ -18,6 +18,7 @@ import {
   ChevronRight,
   Camera,
   X,
+  ImageIcon,
 } from 'lucide-react'
 import type { PoppleEvent } from '@/lib/events'
 import { getUserProfile } from '@/lib/mypage'
@@ -334,8 +335,10 @@ export function EventDetail({ event, onBack }: EventDetailProps) {
         <div className="relative w-full aspect-[4/3] bg-slate-100 overflow-hidden">
           {imageFailed || !imageSrc ? (
             <div className="flex h-full w-full flex-col items-center justify-center gap-2 bg-gradient-to-br from-slate-100 to-slate-200 text-slate-400">
-              <Sparkles className="size-8 text-sky-400" />
-              <span className="text-xs font-medium">행사 대표 이미지</span>
+              <div className="size-12 rounded-full bg-slate-200/80 flex items-center justify-center text-slate-400">
+                <ImageIcon className="size-6 stroke-[1.8] text-slate-400" />
+              </div>
+              <span className="text-xs font-bold text-slate-400">포스터 준비중</span>
             </div>
           ) : (
             <Image
