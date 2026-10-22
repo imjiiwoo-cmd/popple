@@ -49,6 +49,7 @@ interface HomeScreenProps {
   onOpenCommunity?: () => void
   onOpenMy?: () => void
   onOpenCoupons?: () => void
+  onOpenPopups?: () => void
 }
 
 interface QuickCategoryItem {
@@ -144,6 +145,7 @@ export function HomeScreen({
   onOpenCommunity,
   onOpenMy,
   onOpenCoupons,
+  onOpenPopups,
 }: HomeScreenProps) {
   const router = useRouter()
   const [keyword, setKeyword] = useState('')
@@ -348,8 +350,16 @@ export function HomeScreen({
     }
   }, [initialSearch])
 
-  // 퀵 카테고리 아이콘 클릭 핸들러 (의미 기반 검색 실행 + URL 갱신)
+  // 퀵 카테고리 아이콘 클릭 핸들러 (의미 기반 검색 실행 + URL 갱신 또는 전용 화면 이동)
   const handleQuickCategoryClick = (catKeyword: string) => {
+    if (catKeyword === '팝업') {
+      if (onOpenPopups) {
+        onOpenPopups()
+      } else {
+        router.push('/popups')
+      }
+      return
+    }
     handleSearch(catKeyword)
     if (typeof window !== 'undefined') {
       window.history.pushState(null, '', `/search?keyword=${encodeURIComponent(catKeyword)}`)

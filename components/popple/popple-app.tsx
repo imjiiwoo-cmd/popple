@@ -15,6 +15,7 @@ import { EventsCalendarScreen } from './events-calendar-screen'
 import { CommunityScreen } from './community-screen'
 import { MyScreen } from './my-screen'
 import { CouponScreen } from './coupon-screen'
+import { PopupsScreen } from './popups-screen'
 import { resizeImage } from '@/lib/resize-image'
 import type { Recommendation } from '@/lib/types'
 import type { PoppleEvent } from '@/lib/events'
@@ -22,8 +23,8 @@ import { recordEventClick } from '@/lib/ranking'
 import { cn } from '@/lib/utils'
 
 type LensStatus = 'idle' | 'loading' | 'result'
-type ScreenMode = 'home' | 'events' | 'community' | 'my' | 'lens' | 'detail' | 'coupons'
-type NavMode = 'home' | 'events' | 'community' | 'my' | 'lens' | 'coupons'
+type ScreenMode = 'home' | 'events' | 'community' | 'my' | 'lens' | 'detail' | 'coupons' | 'popups'
+type NavMode = 'home' | 'events' | 'community' | 'my' | 'lens' | 'coupons' | 'popups'
 
 export function PoppleApp({
   initialMode = 'home',
@@ -229,6 +230,13 @@ export function PoppleApp({
             window.scrollTo({ top: 0, left: 0, behavior: 'instant' })
           }
         }}
+        onOpenPopups={() => {
+          setPreviousMode('home')
+          setMode('popups')
+          if (typeof window !== 'undefined') {
+            window.scrollTo({ top: 0, left: 0, behavior: 'instant' })
+          }
+        }}
         onSelectEvent={(ev) => {
           recordEventClick(ev)
           setSelectedEvent(ev)
@@ -373,6 +381,57 @@ export function PoppleApp({
         }}
         onOpenEvents={() => {
           setMode('events')
+          if (typeof window !== 'undefined') {
+            window.scrollTo({ top: 0, left: 0, behavior: 'instant' })
+          }
+        }}
+        onOpenCommunity={() => {
+          setMode('community')
+          if (typeof window !== 'undefined') {
+            window.scrollTo({ top: 0, left: 0, behavior: 'instant' })
+          }
+        }}
+        onOpenMy={() => {
+          setMode('my')
+          if (typeof window !== 'undefined') {
+            window.scrollTo({ top: 0, left: 0, behavior: 'instant' })
+          }
+        }}
+      />
+    )
+  } else if (mode === 'popups') {
+    // 5-1. 실시간 핫한 팝업스토어 전용 화면
+    content = (
+      <PopupsScreen
+        onBack={() => {
+          setMode(previousMode === 'popups' ? 'home' : previousMode)
+          if (typeof window !== 'undefined') {
+            window.scrollTo({ top: 0, left: 0, behavior: 'instant' })
+          }
+        }}
+        onSelectEvent={(ev) => {
+          recordEventClick(ev)
+          setSelectedEvent(ev)
+          setPreviousMode('popups')
+          setMode('detail')
+          if (typeof window !== 'undefined') {
+            window.scrollTo({ top: 0, left: 0, behavior: 'instant' })
+          }
+        }}
+        onOpenHome={() => {
+          setMode('home')
+          if (typeof window !== 'undefined') {
+            window.scrollTo({ top: 0, left: 0, behavior: 'instant' })
+          }
+        }}
+        onOpenEvents={() => {
+          setMode('events')
+          if (typeof window !== 'undefined') {
+            window.scrollTo({ top: 0, left: 0, behavior: 'instant' })
+          }
+        }}
+        onOpenLens={() => {
+          setMode('lens')
           if (typeof window !== 'undefined') {
             window.scrollTo({ top: 0, left: 0, behavior: 'instant' })
           }

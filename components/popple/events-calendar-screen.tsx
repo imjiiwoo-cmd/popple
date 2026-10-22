@@ -187,8 +187,9 @@ export function EventsCalendarScreen({
   // 3. 북마크 상태 캐시
   const [bookmarkedMap, setBookmarkedMap] = useState<Record<string, boolean>>({})
 
-  // 4. 축제 목록 데이터 (실제 TourAPI 기반)
+  // 4. 축제 및 팝업스토어 목록 데이터
   const [festivals, setFestivals] = useState<CalendarFestival[]>([])
+  const [popups, setPopups] = useState<PoppleEvent[]>([])
   const [isLoading, setIsLoading] = useState(true)
 
   // 5. 플로팅 최상단 스크롤 버튼 표시 상태
@@ -225,20 +226,27 @@ export function EventsCalendarScreen({
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
 
-  // 축제 데이터 불러오기 (실제 TourAPI searchFestival2 기반)
+  // 축제 및 팝업스토어 데이터 불러오기
   useEffect(() => {
     let isMounted = true
     setIsLoading(true)
 
-    fetch('/api/festivals')
-      .then((res) => res.json())
-      .then((data) => {
+    Promise.all([
+      fetch('/api/festivals')
+        .then((res) => res.json())
+        .catch(() => ({ festivals: [] })),
+      fetch('/api/popups')
+        .then((res) => res.json())
+        .catch(() => ({ popups: [] })),
+    ])
+      .then(([festData, popData]) => {
         if (isMounted) {
-          setFestivals(data.festivals || [])
+          setFestivals(festData.festivals || [])
+          setPopups(popData.popups || [])
         }
       })
       .catch((err) => {
-        console.warn('Failed to load festivals for calendar:', err)
+        console.warn('Failed to load festivals/popups for calendar:', err)
       })
       .finally(() => {
         if (isMounted) setIsLoading(false)
@@ -253,7 +261,7 @@ export function EventsCalendarScreen({
   useEffect(() => {
     const map: Record<string, boolean> = {}
     try {
-      for (const ev of festivals) {
+      for (const ev of [...festivals, ...popups]) {
         if (localStorage.getItem(`popple_bookmark_${ev.id}`) === 'true') {
           map[ev.id] = true
         }
@@ -262,7 +270,7 @@ export function EventsCalendarScreen({
     } catch {
       // 무시
     }
-  }, [festivals])
+  }, [festivals, popups])
 
   const toggleBookmark = (eventId: string, e: React.MouseEvent) => {
     e.stopPropagation()
@@ -392,9 +400,16 @@ export function EventsCalendarScreen({
     return withEvents.length > 0 ? withEvents : weekFestivalGroups
   }, [weekFestivalGroups, selectedEventType])
 
+  // 팝업스토어 필터링 (지역 필터 연동)
+  const filteredPopups = useMemo(() => {
+    if (selectedEventType !== '팝업스토어') return []
+    if (selectedRegion === '전체 지역') return popups
+    return popups.filter((p) => matchesRegion(p.location, p.title, selectedRegion))
+  }, [popups, selectedRegion, selectedEventType])
+
   // 이번 주 총 행사 개수 (중복 제거)
   const totalEventsInWeek = useMemo(() => {
-    if (selectedEventType === '팝업스토어') return 0
+    if (selectedEventType === '팝업스토어') return filteredPopups.length
     const idSet = new Set<string>()
     for (const g of weekFestivalGroups) {
       for (const ev of g.events) {
@@ -402,7 +417,7 @@ export function EventsCalendarScreen({
       }
     }
     return idSet.size
-  }, [weekFestivalGroups, selectedEventType])
+  }, [weekFestivalGroups, selectedEventType, filteredPopups])
 
   return (
     <div className="relative flex flex-col min-h-dvh bg-[#F8FAFC] text-slate-900 pb-28">
@@ -663,11 +678,117 @@ export function EventsCalendarScreen({
             </div>
           </div>
 
-          {/* [3. 행사 필터: '팝업스토어' 선택 시 안내 문구] */}
+          {/* [3. 행사 필터: '팝업스토어' 선택 시 실시간 팝업스토어 리스트 렌더링] */}
           {selectedEventType === '팝업스토어' ? (
-            <div className="text-gray-400 text-center py-16 text-sm font-semibold">
-              준비중입니다
-            </div>
+            filteredPopups.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-16 px-4 bg-white rounded-3xl border border-slate-100 text-center gap-2.5 shadow-xs">
+                <div className="size-12 rounded-full bg-slate-100 flex items-center justify-center text-slate-400">
+                  <CalendarIcon className="size-6 stroke-[1.8]" />
+                </div>
+                <p className="text-base font-bold text-slate-800">
+                  해당 지역에 진행 중인 팝업스토어가 없어요
+                </p>
+                <p className="text-xs text-slate-500 break-keep">
+                  지역 필터를 &lsquo;전체 지역&rsquo; 또는 다른 지역으로 변경해보세요!
+                </p>
+              </div>
+            ) : (
+              <div className="flex flex-col gap-3.5">
+                {filteredPopups.map((ev) => {
+                  const isBookmarked = !!bookmarkedMap[ev.id]
+
+                  return (
+                    <article
+                      key={ev.id}
+                      onClick={() => onSelectEvent(ev)}
+                      className="group relative bg-white rounded-3xl p-3 border border-slate-100 shadow-[0_4px_16px_rgba(0,0,0,0.03)] flex gap-3.5 hover:shadow-md transition-all active:scale-[0.99] cursor-pointer"
+                    >
+                      {/* 좌측: 둥근 모서리의 세로형 포스터 썸네일 이미지 */}
+                      <div className="relative w-[112px] min-w-[112px] h-[190px] rounded-2xl overflow-hidden bg-slate-100 shrink-0">
+                        <span className="absolute top-2.5 left-2.5 z-10 px-2 py-0.5 rounded-lg text-[10px] font-black text-white shadow-xs bg-[#1884F7]">
+                          팝업
+                        </span>
+
+                        <Image
+                          src={ev.imageUrl || ev.poster || '/events/media-art.png'}
+                          alt={ev.title}
+                          fill
+                          sizes="112px"
+                          unoptimized
+                          className="object-cover transition-transform duration-300 group-hover:scale-105"
+                        />
+                      </div>
+
+                      {/* 우측: 행사명, 기간, 입장료, 장소 텍스트 및 액션 버튼 */}
+                      <div className="flex flex-col justify-between flex-1 py-0.5 min-w-0">
+                        <div>
+                          {/* 상단: 행사명 볼드 타이틀 + 우측 상단 북마크(별) 버튼 */}
+                          <div className="flex items-start justify-between gap-1">
+                            <h3 className="text-[16px] font-black text-slate-900 leading-snug line-clamp-2 pr-1">
+                              {ev.title}
+                            </h3>
+                            <button
+                              type="button"
+                              onClick={(e) => toggleBookmark(ev.id, e)}
+                              aria-label={isBookmarked ? '북마크 취소' : '북마크 추가'}
+                              className="size-8 flex items-center justify-center -mr-1 -mt-1 text-slate-300 hover:text-amber-400 transition-colors shrink-0"
+                            >
+                              <Star
+                                className={`size-5 transition-transform active:scale-125 ${
+                                  isBookmarked
+                                    ? 'fill-amber-400 text-amber-400'
+                                    : 'text-slate-300 stroke-[1.8]'
+                                }`}
+                              />
+                            </button>
+                          </div>
+
+                          {/* 상세 정보: 기간, 입장료, 장소 */}
+                          <div className="flex flex-col gap-1 mt-2.5 text-xs">
+                            <div className="flex items-center">
+                              <span className="w-11 text-slate-400 font-medium shrink-0">
+                                기간
+                              </span>
+                              <span className="font-bold text-slate-700 truncate">
+                                {ev.date}
+                              </span>
+                            </div>
+                            <div className="flex items-center">
+                              <span className="w-11 text-slate-400 font-medium shrink-0">
+                                입장료
+                              </span>
+                              <span className="font-bold text-slate-700">
+                                {ev.price || '무료'}
+                              </span>
+                            </div>
+                            <div className="flex items-center text-slate-500 font-medium mt-0.5">
+                              <MapPin className="size-3 text-slate-400 shrink-0 mr-1" />
+                              <span className="truncate">{ev.location}</span>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* 하단: '상세 안내 >' 버튼 */}
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            onSelectEvent(ev)
+                          }}
+                          className="bg-[#F0F7FF] hover:bg-[#E2F0FE] active:scale-[0.98] text-[#1884F7] rounded-xl px-3.5 py-2.5 flex items-center justify-between text-xs font-black transition-colors w-full mt-3"
+                        >
+                          <span>상세 안내</span>
+                          <span className="flex items-center gap-0.5 font-bold text-slate-500">
+                            <span>방문 정보</span>
+                            <ChevronRight className="size-3.5 text-[#1884F7] stroke-[2.5]" />
+                          </span>
+                        </button>
+                      </div>
+                    </article>
+                  )
+                })}
+              </div>
+            )
           ) : isLoading ? (
             <div className="flex flex-col items-center justify-center py-20 gap-3 text-slate-400">
               <div className="size-8 rounded-full border-3 border-sky-400 border-t-transparent animate-spin" />
