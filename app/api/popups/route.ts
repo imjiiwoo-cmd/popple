@@ -11,7 +11,229 @@ export interface PopupItem extends PoppleEvent {
   officialQuery?: string
 }
 
-// 1. [실제 서울 5대 팝업 성지 28선 마스터 큐레이션 풀 (오프라인/API 장애 완벽 방어용)]
+// -------------------------------------------------------------
+// [3순위: 행사 테마별 정밀 Unsplash 키워드 매칭 풀 (최후의 보루)]
+// -------------------------------------------------------------
+const THEMED_FALLBACK_IMAGES: Record<string, string[]> = {
+  toy: [
+    'https://images.unsplash.com/photo-1608889476561-6242cfdbf622?w=600&auto=format&fit=crop&q=80', // designer vinyl art toy
+    'https://images.unsplash.com/photo-1566576912321-d58ddd743358?w=600&auto=format&fit=crop&q=80', // vinyl figure
+    'https://images.unsplash.com/photo-1585366119957-e9730b6d0f60?w=600&auto=format&fit=crop&q=80', // lego bricks & minifigures
+  ],
+  character: [
+    'https://images.unsplash.com/photo-1569701813229-33284b643e3c?w=600&auto=format&fit=crop&q=80', // cute pink character (잔망루피/산리오)
+    'https://images.unsplash.com/photo-1613771404784-3a5686aa2be3?w=600&auto=format&fit=crop&q=80', // pokemon yellow creature
+    'https://images.unsplash.com/photo-1534447677768-be436bb09401?w=600&auto=format&fit=crop&q=80', // cute character art
+    'https://images.unsplash.com/photo-1579783902614-a3fb3927b675?w=600&auto=format&fit=crop&q=80', // anime illustration
+    'https://images.unsplash.com/photo-1513151233558-d860c5398176?w=600&auto=format&fit=crop&q=80', // celebration confetti
+  ],
+  bakery_food: [
+    'https://images.unsplash.com/photo-1509440159596-0249088772ff?w=600&auto=format&fit=crop&q=80', // fresh bagels & bread (런던베이글)
+    'https://images.unsplash.com/photo-1555507036-ab1f4038808a?w=600&auto=format&fit=crop&q=80', // bakery pastry
+    'https://images.unsplash.com/photo-1551024709-8f23befc6f87?w=600&auto=format&fit=crop&q=80', // gourmet donuts
+    'https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?w=600&auto=format&fit=crop&q=80', // coffee cafe
+  ],
+  beauty: [
+    'https://images.unsplash.com/photo-1592945403244-b3fbafd7f539?w=600&auto=format&fit=crop&q=80', // amber perfume bottle (르라보/탬버린즈)
+    'https://images.unsplash.com/photo-1563245372-f21724e3856d?w=600&auto=format&fit=crop&q=80', // candle & scent
+    'https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?w=600&auto=format&fit=crop&q=80', // cosmetics makeup (무신사뷰티)
+    'https://images.unsplash.com/photo-1541701494587-cb58502866ab?w=600&auto=format&fit=crop&q=80', // floral garden art (디올 성수)
+    'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=600&auto=format&fit=crop&q=80', // gold jewelry (샤넬 코코크러쉬)
+  ],
+  fashion: [
+    'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=600&auto=format&fit=crop&q=80', // red sneakers (나이키)
+    'https://images.unsplash.com/photo-1511499767150-a48a237f0083?w=600&auto=format&fit=crop&q=80', // chic eyewear (젠틀몬스터 x 마르지엘라)
+    'https://images.unsplash.com/photo-1508700115892-45ecd05ae2ad?w=600&auto=format&fit=crop&q=80', // futuristic fashion space (아더에러)
+    'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=600&auto=format&fit=crop&q=80', // vinyl record (무신사 테라스)
+  ],
+  tech_ent: [
+    'https://images.unsplash.com/photo-1574375927938-d5a98e8ffe85?w=600&auto=format&fit=crop&q=80', // netflix neon cinema
+    'https://images.unsplash.com/photo-1510519138195-068d82f0f48d?w=600&auto=format&fit=crop&q=80', // apple creative studio
+    'https://images.unsplash.com/photo-1612287232077-e613c2c10b7a?w=600&auto=format&fit=crop&q=80', // nintendo gaming console
+  ],
+}
+
+export function getThemedFallbackImage(title: string, tags: string[] = [], index = 0): string {
+  const combined = `${title} ${tags.join(' ')}`.toLowerCase()
+
+  // 1) 피규어 / 토이 / 레고
+  if (/피규어|토이|팝마트|레고|블라인드|toy|figure|브릭|미니피겨/i.test(combined)) {
+    const list = THEMED_FALLBACK_IMAGES.toy
+    return list[index % list.length]
+  }
+
+  // 2) 캐릭터 / 만화 / 애니메이션
+  if (/캐릭터|만화|루피|잔망루피|산리오|키티|쿠로미|시나모롤|포켓몬|피카츄|디즈니|픽사|애니메이션|라인프렌즈|미니니|bt21|카카오|춘식이|닌텐도|마리오|최고심|플레이브/i.test(combined)) {
+    const list = THEMED_FALLBACK_IMAGES.character
+    return list[index % list.length]
+  }
+
+  // 3) 베이커리 / 푸드 / 카페 / 디저트
+  if (/베이커리|베이글|빵|디저트|푸드|도넛|카페|커피|스타벅스|스낵|런던베이글|미트볼|나이스웨더|오설록|티|식음료/i.test(combined)) {
+    const list = THEMED_FALLBACK_IMAGES.bakery_food
+    return list[index % list.length]
+  }
+
+  // 4) 뷰티 / 화장품 / 향수
+  if (/뷰티|화장품|향수|퍼퓸|프래그런스|스킨케어|메이크업|샤넬|디올|탬버린즈|르라보|아모레|립스틱|캔들/i.test(combined)) {
+    const list = THEMED_FALLBACK_IMAGES.beauty
+    return list[index % list.length]
+  }
+
+  // 5) 패션 / 의류 / 스니커즈 / 아이웨어
+  if (/패션|의류|옷|신발|스니커즈|나이키|아더에러|마르지엘라|젠틀몬스터|아이웨어|선글라스|무신사|빈티지|lp|바이닐/i.test(combined)) {
+    const list = THEMED_FALLBACK_IMAGES.fashion
+    return list[index % list.length]
+  }
+
+  // 6) 테크 / 엔터 / 미디어
+  if (/넷플릭스|애플|스튜디오|게임|콘서트|체험|미디어/i.test(combined)) {
+    const list = THEMED_FALLBACK_IMAGES.tech_ent
+    return list[index % list.length]
+  }
+
+  return THEMED_FALLBACK_IMAGES.beauty[0]
+}
+
+// -------------------------------------------------------------
+// [1순위: 공식 예약/원문 링크의 og:image 실제 크롤링]
+// -------------------------------------------------------------
+async function extractOgImage(url: string): Promise<string | null> {
+  if (!url || !url.startsWith('http')) return null
+
+  // 일반 검색엔진 결과 페이지는 검색 로고 등이 잡힐 수 있으므로 스킵
+  if (
+    url.includes('search.naver.com') ||
+    url.includes('google.com') ||
+    url.includes('m.booking.naver.com/search')
+  ) {
+    return null
+  }
+
+  try {
+    const res = await fetch(url, {
+      headers: {
+        'User-Agent':
+          'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+        'Accept-Language': 'ko-KR,ko;q=0.9,en-US;q=0.8,en;q=0.7',
+      },
+      signal: AbortSignal.timeout(2800),
+      redirect: 'follow',
+    })
+
+    if (!res.ok) return null
+    const contentType = res.headers.get('content-type') || ''
+    if (!contentType.includes('text/html')) return null
+
+    const html = await res.text()
+    const match =
+      html.match(/<meta[^>]*property=["']og:image["'][^>]*content=["']([^"']+)["']/i) ||
+      html.match(/<meta[^>]*content=["']([^"']+)["'][^>]*property=["']og:image["']/i) ||
+      html.match(/<meta[^>]*name=["']twitter:image["'][^>]*content=["']([^"']+)["']/i)
+
+    if (match && match[1]) {
+      let img = match[1].trim()
+      if (img.startsWith('//')) img = 'https:' + img
+      else if (img.startsWith('/')) {
+        const parsedUrl = new URL(url)
+        img = `${parsedUrl.origin}${img}`
+      }
+      // 유효한 이미지 확장자/URL인지 검증 (트래킹 픽셀, 포털 기본 스니펫 로고 제외)
+      if (
+        img.startsWith('http') &&
+        !img.includes('blank.gif') &&
+        !img.includes('favicon') &&
+        !img.includes('1x1') &&
+        !img.includes('snippet_') &&
+        !img.includes('share_default') &&
+        !img.includes('og_default') &&
+        !img.includes('no_image')
+      ) {
+        return img
+      }
+    }
+  } catch {
+    // 무시하고 2순위로 이동
+  }
+  return null
+}
+
+// -------------------------------------------------------------
+// [2순위: 네이버 이미지 검색 API (Search Image API) 연동]
+// -------------------------------------------------------------
+async function fetchNaverSearchImage(
+  query: string,
+  clientId: string,
+  clientSecret: string,
+): Promise<string | null> {
+  try {
+    const url = `https://openapi.naver.com/v1/search/image.json?query=${encodeURIComponent(query)}&display=3&sort=sim`
+    const res = await fetch(url, {
+      headers: {
+        'X-Naver-Client-Id': clientId,
+        'X-Naver-Client-Secret': clientSecret,
+      },
+      next: { revalidate: 3600 },
+      signal: AbortSignal.timeout(2500),
+    })
+
+    if (res.ok) {
+      const data = await res.json()
+      if (Array.isArray(data.items) && data.items.length > 0) {
+        for (const item of data.items) {
+          const img = item.link || item.thumbnail
+          if (img && typeof img === 'string' && img.startsWith('http') && !img.endsWith('.svg')) {
+            return img
+          }
+        }
+      }
+    }
+  } catch {
+    // 무시하고 3순위로 이동
+  }
+  return null
+}
+
+// -------------------------------------------------------------
+// [3단계 복합 이미지 해석기: 1순위 -> 2순위 -> 3순위]
+// -------------------------------------------------------------
+async function resolvePopupPosterImage(
+  title: string,
+  urls: (string | undefined)[],
+  clientId?: string,
+  clientSecret?: string,
+  tags: string[] = [],
+  index = 0,
+): Promise<string> {
+  // [1순위: 공식 예약/원문 링크의 og:image 실제 크롤링]
+  for (const url of urls) {
+    if (!url || !url.startsWith('http')) continue
+    const ogImg = await extractOgImage(url)
+    if (ogImg) {
+      return ogImg
+    }
+  }
+
+  // [2순위: 네이버 이미지 검색 API (Search Image API) 연동]
+  if (clientId && clientSecret) {
+    const cleanTitle = title.replace(/\([^)]*\)/g, '').trim()
+    const queries = [`${cleanTitle} 포스터`, cleanTitle]
+    for (const q of queries) {
+      const naverImg = await fetchNaverSearchImage(q, clientId, clientSecret)
+      if (naverImg) {
+        return naverImg
+      }
+    }
+  }
+
+  // [3순위: 행사 테마별 정밀 Unsplash 키워드 매칭]
+  return getThemedFallbackImage(title, tags, index)
+}
+
+// -------------------------------------------------------------
+// [실제 서울 5대 팝업 성지 28선 마스터 데이터셋]
+// -------------------------------------------------------------
 const MASTER_CURATED_POPUPS: PopupItem[] = [
   // --- 성수 (6) ---
   {
@@ -27,8 +249,8 @@ const MASTER_CURATED_POPUPS: PopupItem[] = [
     reservationUrl: 'https://m.booking.naver.com',
     websiteUrl: 'https://m.search.naver.com/search.naver?query=디올+성수+팝업스토어',
     officialQuery: '디올 성수 팝업스토어 포스터',
-    imageUrl: 'https://images.unsplash.com/photo-1541701494587-cb58502866ab?w=600&auto=format&fit=crop&q=80',
-    poster: 'https://images.unsplash.com/photo-1541701494587-cb58502866ab?w=600&auto=format&fit=crop&q=80',
+    imageUrl: THEMED_FALLBACK_IMAGES.beauty[3],
+    poster: THEMED_FALLBACK_IMAGES.beauty[3],
     category: '팝업스토어',
   },
   {
@@ -42,10 +264,10 @@ const MASTER_CURATED_POPUPS: PopupItem[] = [
     description: '독창적인 향과 조각 예술이 어우러진 감각적인 힐링 전시. 신규 퍼퓸 라인업 시향 및 구매 고객 한정 기프트 증정.',
     tags: ['#탬버린즈', '#성수핫플', '#향수팝업', '#굿즈증정', '#전시체험'],
     reservationUrl: 'https://www.tamburins.com',
-    websiteUrl: 'https://m.search.naver.com/search.naver?query=탬버린즈+성수+팝업',
+    websiteUrl: 'https://www.tamburins.com',
     officialQuery: '탬버린즈 성수 팝업스토어 포스터',
-    imageUrl: 'https://images.unsplash.com/photo-1563245372-f21724e3856d?w=600&auto=format&fit=crop&q=80',
-    poster: 'https://images.unsplash.com/photo-1563245372-f21724e3856d?w=600&auto=format&fit=crop&q=80',
+    imageUrl: THEMED_FALLBACK_IMAGES.beauty[1],
+    poster: THEMED_FALLBACK_IMAGES.beauty[1],
     category: '팝업스토어',
   },
   {
@@ -59,10 +281,10 @@ const MASTER_CURATED_POPUPS: PopupItem[] = [
     description: '핫한 인디 뷰티 브랜드 40여 개가 총출동하는 체험형 팝업. 룰렛 이벤트와 본품 럭키드로우 샘플팩 제공.',
     tags: ['#무신사뷰티', '#성수동', '#샘플증정', '#뷰티팝업', '#럭키드로우'],
     reservationUrl: 'https://www.musinsa.com',
-    websiteUrl: 'https://m.search.naver.com/search.naver?query=무신사+뷰티+페스타+성수',
+    websiteUrl: 'https://www.musinsa.com',
     officialQuery: '무신사 뷰티 페스타 성수 포스터',
-    imageUrl: 'https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?w=600&auto=format&fit=crop&q=80',
-    poster: 'https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?w=600&auto=format&fit=crop&q=80',
+    imageUrl: THEMED_FALLBACK_IMAGES.beauty[2],
+    poster: THEMED_FALLBACK_IMAGES.beauty[2],
     category: '팝업스토어',
   },
   {
@@ -76,10 +298,10 @@ const MASTER_CURATED_POPUPS: PopupItem[] = [
     description: '샤넬의 아이코닉 주얼리 코코 크러쉬를 만나는 인터랙티브 공간. 주얼리 스타일링과 스페셜 포토부스 체험.',
     tags: ['#샤넬', '#코코크러쉬', '#성수팝업', '#사전예약', '#주얼리'],
     reservationUrl: 'https://www.chanel.com',
-    websiteUrl: 'https://m.search.naver.com/search.naver?query=샤넬+코코크러쉬+성수+팝업',
+    websiteUrl: 'https://www.chanel.com',
     officialQuery: '샤넬 코코크러쉬 성수 팝업 포스터',
-    imageUrl: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=600&auto=format&fit=crop&q=80',
-    poster: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=600&auto=format&fit=crop&q=80',
+    imageUrl: THEMED_FALLBACK_IMAGES.beauty[4],
+    poster: THEMED_FALLBACK_IMAGES.beauty[4],
     category: '팝업스토어',
   },
   {
@@ -93,10 +315,10 @@ const MASTER_CURATED_POPUPS: PopupItem[] = [
     description: '미디어 아트와 하이엔드 패션이 융합된 우주 테마 오브제 전시. 리미티드 캡슐 컬렉션 단독 공개.',
     tags: ['#아더에러', '#성수전시', '#미디어아트', '#패션팝업', '#포토스팟'],
     reservationUrl: 'https://adererror.com',
-    websiteUrl: 'https://m.search.naver.com/search.naver?query=아더에러+성수+팝업',
+    websiteUrl: 'https://adererror.com',
     officialQuery: '아더에러 성수 팝업스토어 포스터',
-    imageUrl: 'https://images.unsplash.com/photo-1508700115892-45ecd05ae2ad?w=600&auto=format&fit=crop&q=80',
-    poster: 'https://images.unsplash.com/photo-1508700115892-45ecd05ae2ad?w=600&auto=format&fit=crop&q=80',
+    imageUrl: THEMED_FALLBACK_IMAGES.fashion[2],
+    poster: THEMED_FALLBACK_IMAGES.fashion[2],
     category: '팝업스토어',
   },
   {
@@ -110,7 +332,7 @@ const MASTER_CURATED_POPUPS: PopupItem[] = [
     description: '스웨디시 라이프스타일을 담은 컬러풀 쇼룸과 스웨덴 미트볼 시식존, 업사이클링 DIY 클래스 진행.',
     tags: ['#이케아성수', '#리빙팝업', '#체험존', '#푸드팝업', '#성수놀거리'],
     reservationUrl: 'https://www.ikea.com',
-    websiteUrl: 'https://m.search.naver.com/search.naver?query=이케아+성수+팝업',
+    websiteUrl: 'https://www.ikea.com',
     officialQuery: '이케아 성수 팝업스토어 포스터',
     imageUrl: 'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=600&auto=format&fit=crop&q=80',
     poster: 'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=600&auto=format&fit=crop&q=80',
@@ -131,8 +353,8 @@ const MASTER_CURATED_POPUPS: PopupItem[] = [
     reservationUrl: 'https://m.booking.naver.com',
     websiteUrl: 'https://m.search.naver.com/search.naver?query=더현대+서울+디즈니+팝업',
     officialQuery: '더현대 서울 디즈니 픽사 팝업스토어 포스터',
-    imageUrl: 'https://images.unsplash.com/photo-1513151233558-d860c5398176?w=600&auto=format&fit=crop&q=80',
-    poster: 'https://images.unsplash.com/photo-1513151233558-d860c5398176?w=600&auto=format&fit=crop&q=80',
+    imageUrl: THEMED_FALLBACK_IMAGES.character[4],
+    poster: THEMED_FALLBACK_IMAGES.character[4],
     category: '팝업스토어',
   },
   {
@@ -146,10 +368,10 @@ const MASTER_CURATED_POPUPS: PopupItem[] = [
     description: '몰리, 디무, 라부부 한정판 블라인드 박스 및 대형 아트토이 전시. 구매 금액별 스페셜 굿즈 증정.',
     tags: ['#팝마트', '#더현대팝업', '#아트토이', '#라부부', '#한정판굿즈'],
     reservationUrl: 'https://popmart.co.kr',
-    websiteUrl: 'https://m.search.naver.com/search.naver?query=더현대+서울+팝마트+팝업',
+    websiteUrl: 'https://popmart.co.kr',
     officialQuery: '더현대 서울 팝마트 팝업스토어 포스터',
-    imageUrl: 'https://images.unsplash.com/photo-1566576912321-d58ddd743358?w=600&auto=format&fit=crop&q=80',
-    poster: 'https://images.unsplash.com/photo-1566576912321-d58ddd743358?w=600&auto=format&fit=crop&q=80',
+    imageUrl: THEMED_FALLBACK_IMAGES.toy[0], // Designer art toy
+    poster: THEMED_FALLBACK_IMAGES.toy[0],
     category: '팝업스토어',
   },
   {
@@ -165,8 +387,8 @@ const MASTER_CURATED_POPUPS: PopupItem[] = [
     reservationUrl: 'https://m.booking.naver.com',
     websiteUrl: 'https://m.search.naver.com/search.naver?query=더현대+서울+잔망루피+팝업',
     officialQuery: '더현대 잔망루피 팝업스토어 포스터',
-    imageUrl: 'https://images.unsplash.com/photo-1534447677768-be436bb09401?w=600&auto=format&fit=crop&q=80',
-    poster: 'https://images.unsplash.com/photo-1534447677768-be436bb09401?w=600&auto=format&fit=crop&q=80',
+    imageUrl: THEMED_FALLBACK_IMAGES.character[0], // Cute pink character
+    poster: THEMED_FALLBACK_IMAGES.character[0],
     category: '팝업스토어',
   },
   {
@@ -180,10 +402,10 @@ const MASTER_CURATED_POPUPS: PopupItem[] = [
     description: '힙한 편의점 나이스웨더와 미국·유럽 로컬 스낵 브랜드 콜라보. 레트로 굿즈와 시그니처 도넛 판매.',
     tags: ['#나이스웨더', '#스트리트푸드', '#디저트팝업', '#여의도맛집', '#더현대'],
     reservationUrl: 'https://niceweather.co.kr',
-    websiteUrl: 'https://m.search.naver.com/search.naver?query=더현대+나이스웨더+팝업',
+    websiteUrl: 'https://niceweather.co.kr',
     officialQuery: '더현대 서울 나이스웨더 팝업 포스터',
-    imageUrl: 'https://images.unsplash.com/photo-1509440159596-0249088772ff?w=600&auto=format&fit=crop&q=80',
-    poster: 'https://images.unsplash.com/photo-1509440159596-0249088772ff?w=600&auto=format&fit=crop&q=80',
+    imageUrl: THEMED_FALLBACK_IMAGES.bakery_food[2], // gourmet donuts
+    poster: THEMED_FALLBACK_IMAGES.bakery_food[2],
     category: '팝업스토어',
   },
   {
@@ -197,10 +419,10 @@ const MASTER_CURATED_POPUPS: PopupItem[] = [
     description: '클래식 니치 향수 르라보의 랩(Lab) 콘셉트 전시 및 시향. 나만의 문구를 새기는 커스텀 라벨링 제공.',
     tags: ['#르라보', '#니치향수', '#더현대1층', '#커스텀라벨링', '#시향존'],
     reservationUrl: 'https://www.lelabofragrances.com',
-    websiteUrl: 'https://m.search.naver.com/search.naver?query=더현대+서울+르라보+팝업',
+    websiteUrl: 'https://www.lelabofragrances.com',
     officialQuery: '더현대 르라보 팝업스토어 포스터',
-    imageUrl: 'https://images.unsplash.com/photo-1592945403244-b3fbafd7f539?w=600&auto=format&fit=crop&q=80',
-    poster: 'https://images.unsplash.com/photo-1592945403244-b3fbafd7f539?w=600&auto=format&fit=crop&q=80',
+    imageUrl: THEMED_FALLBACK_IMAGES.beauty[0], // Amber perfume bottle
+    poster: THEMED_FALLBACK_IMAGES.beauty[0],
     category: '팝업스토어',
   },
   {
@@ -235,8 +457,8 @@ const MASTER_CURATED_POPUPS: PopupItem[] = [
     reservationUrl: 'https://m.booking.naver.com',
     websiteUrl: 'https://m.search.naver.com/search.naver?query=산리오+러버스+클럽+홍대',
     officialQuery: '홍대 산리오 러버스 클럽 팝업 포스터',
-    imageUrl: 'https://images.unsplash.com/photo-1511556532299-8f662fc26c06?w=600&auto=format&fit=crop&q=80',
-    poster: 'https://images.unsplash.com/photo-1511556532299-8f662fc26c06?w=600&auto=format&fit=crop&q=80',
+    imageUrl: THEMED_FALLBACK_IMAGES.character[2], // cute character artwork
+    poster: THEMED_FALLBACK_IMAGES.character[2],
     category: '팝업스토어',
   },
   {
@@ -250,10 +472,10 @@ const MASTER_CURATED_POPUPS: PopupItem[] = [
     description: '글로벌 인기 캐릭터 미니니(minini)와 BT21 신규 시즌 컬렉션. 초대형 메가 캐릭터 포토존 운영.',
     tags: ['#라인프렌즈', '#BT21', '#홍대입구역', '#미니니', '#굿즈스토어'],
     reservationUrl: 'https://brand.naver.com/linefriends',
-    websiteUrl: 'https://m.search.naver.com/search.naver?query=라인프렌즈+스퀘어+홍대',
+    websiteUrl: 'https://brand.naver.com/linefriends',
     officialQuery: '라인프렌즈 스퀘어 홍대 팝업스토어 포스터',
-    imageUrl: 'https://images.unsplash.com/photo-1579783902614-a3fb3927b675?w=600&auto=format&fit=crop&q=80',
-    poster: 'https://images.unsplash.com/photo-1579783902614-a3fb3927b675?w=600&auto=format&fit=crop&q=80',
+    imageUrl: THEMED_FALLBACK_IMAGES.character[3], // anime character illustration
+    poster: THEMED_FALLBACK_IMAGES.character[3],
     category: '팝업스토어',
   },
   {
@@ -267,10 +489,10 @@ const MASTER_CURATED_POPUPS: PopupItem[] = [
     description: '국내 아티스트와 협업한 춘식이 현대미술 콜라보 전시. 인터랙티브 드로잉 체험존과 굿즈샵 마련.',
     tags: ['#카카오프렌즈', '#춘식이', '#홍대플래그십', '#아트콜라보', '#포토존'],
     reservationUrl: 'https://store.kakaofriends.com',
-    websiteUrl: 'https://m.search.naver.com/search.naver?query=카카오프렌즈+홍대+춘식이',
+    websiteUrl: 'https://store.kakaofriends.com',
     officialQuery: '카카오프렌즈 홍대 춘식이 팝업 포스터',
-    imageUrl: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=600&auto=format&fit=crop&q=80',
-    poster: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=600&auto=format&fit=crop&q=80',
+    imageUrl: THEMED_FALLBACK_IMAGES.character[4],
+    poster: THEMED_FALLBACK_IMAGES.character[4],
     category: '팝업스토어',
   },
   {
@@ -284,10 +506,10 @@ const MASTER_CURATED_POPUPS: PopupItem[] = [
     description: '최신 닌텐도 타이틀 현장 플레이와 마리오·젤다 오리지널 공식 굿즈 팝업 판매.',
     tags: ['#닌텐도', '#게임체험', '#슈퍼마리오', '#홍대놀거리', '#젤다의전설'],
     reservationUrl: 'https://www.nintendo.co.kr',
-    websiteUrl: 'https://m.search.naver.com/search.naver?query=닌텐도+홍대+팝업스토어',
+    websiteUrl: 'https://www.nintendo.co.kr',
     officialQuery: '닌텐도 홍대 팝업스토어 포스터',
-    imageUrl: 'https://images.unsplash.com/photo-1612287232077-e613c2c10b7a?w=600&auto=format&fit=crop&q=80',
-    poster: 'https://images.unsplash.com/photo-1612287232077-e613c2c10b7a?w=600&auto=format&fit=crop&q=80',
+    imageUrl: THEMED_FALLBACK_IMAGES.tech_ent[2], // gaming console
+    poster: THEMED_FALLBACK_IMAGES.tech_ent[2],
     category: '팝업스토어',
   },
   {
@@ -301,10 +523,10 @@ const MASTER_CURATED_POPUPS: PopupItem[] = [
     description: '홍대 파노라마 시티뷰와 함께 즐기는 LP 청음 라운지. 인디 밴드 라이브 쇼케이스 및 빈티지 의류 마켓.',
     tags: ['#무신사테라스', '#바이닐팝업', '#LP청음', '#홍대뷰맛집', '#루프탑'],
     reservationUrl: 'https://www.musinsaterrace.com',
-    websiteUrl: 'https://m.search.naver.com/search.naver?query=무신사+테라스+홍대+팝업',
+    websiteUrl: 'https://www.musinsaterrace.com',
     officialQuery: '무신사 테라스 홍대 팝업스토어 포스터',
-    imageUrl: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=600&auto=format&fit=crop&q=80',
-    poster: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=600&auto=format&fit=crop&q=80',
+    imageUrl: THEMED_FALLBACK_IMAGES.fashion[3], // vinyl record
+    poster: THEMED_FALLBACK_IMAGES.fashion[3],
     category: '팝업스토어',
   },
 
@@ -322,8 +544,8 @@ const MASTER_CURATED_POPUPS: PopupItem[] = [
     reservationUrl: 'https://www.uplus.co.kr',
     websiteUrl: 'https://m.search.naver.com/search.naver?query=일상비일상의틈+넷플릭스+팝업',
     officialQuery: '넷플릭스 일상비일상의틈 강남 팝업 포스터',
-    imageUrl: 'https://images.unsplash.com/photo-1574375927938-d5a98e8ffe85?w=600&auto=format&fit=crop&q=80',
-    poster: 'https://images.unsplash.com/photo-1574375927938-d5a98e8ffe85?w=600&auto=format&fit=crop&q=80',
+    imageUrl: THEMED_FALLBACK_IMAGES.tech_ent[0], // netflix neon cinema
+    poster: THEMED_FALLBACK_IMAGES.tech_ent[0],
     category: '팝업스토어',
   },
   {
@@ -337,10 +559,10 @@ const MASTER_CURATED_POPUPS: PopupItem[] = [
     description: '공간 음향 스튜디오 체험과 iPad 일러스트레이션 무료 세션. K-POP 아티스트 콜라보 세션 진행.',
     tags: ['#애플강남', '#투데이앳애플', '#강남대로', '#무료세션', '#체험프로그램'],
     reservationUrl: 'https://www.apple.com/kr/today',
-    websiteUrl: 'https://m.search.naver.com/search.naver?query=애플+강남+팝업',
+    websiteUrl: 'https://www.apple.com/kr/today',
     officialQuery: '애플 강남 팝업스토어 포스터',
-    imageUrl: 'https://images.unsplash.com/photo-1510519138195-068d82f0f48d?w=600&auto=format&fit=crop&q=80',
-    poster: 'https://images.unsplash.com/photo-1510519138195-068d82f0f48d?w=600&auto=format&fit=crop&q=80',
+    imageUrl: THEMED_FALLBACK_IMAGES.tech_ent[1], // apple creative studio
+    poster: THEMED_FALLBACK_IMAGES.tech_ent[1],
     category: '팝업스토어',
   },
   {
@@ -354,10 +576,10 @@ const MASTER_CURATED_POPUPS: PopupItem[] = [
     description: '초현실적인 키네틱 인스톨레이션과 마르지엘라의 4개의 스티치가 담긴 아이웨어 협업 컬렉션 전시.',
     tags: ['#젠틀몬스터', '#마르지엘라', '#하우스도산', '#압구정핫플', '#아이웨어'],
     reservationUrl: 'https://www.gentlemonster.com',
-    websiteUrl: 'https://m.search.naver.com/search.naver?query=젠틀몬스터+마르지엘라+팝업',
+    websiteUrl: 'https://www.gentlemonster.com',
     officialQuery: '젠틀몬스터 마르지엘라 팝업스토어 포스터',
-    imageUrl: 'https://images.unsplash.com/photo-1511499767150-a48a237f0083?w=600&auto=format&fit=crop&q=80',
-    poster: 'https://images.unsplash.com/photo-1511499767150-a48a237f0083?w=600&auto=format&fit=crop&q=80',
+    imageUrl: THEMED_FALLBACK_IMAGES.fashion[1], // chic eyewear
+    poster: THEMED_FALLBACK_IMAGES.fashion[1],
     category: '팝업스토어',
   },
   {
@@ -371,10 +593,10 @@ const MASTER_CURATED_POPUPS: PopupItem[] = [
     description: '서울 한정 그래픽 패치와 레이저 각인으로 나만의 에어포스를 커스텀하는 Nike By You 팝업.',
     tags: ['#나이키강남', '#나이키바이유', '#에어포스', '#커스텀신발', '#강남핫플'],
     reservationUrl: 'https://www.nike.com/kr',
-    websiteUrl: 'https://m.search.naver.com/search.naver?query=나이키+강남+팝업',
+    websiteUrl: 'https://www.nike.com/kr',
     officialQuery: '나이키 강남 팝업스토어 포스터',
-    imageUrl: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=600&auto=format&fit=crop&q=80',
-    poster: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=600&auto=format&fit=crop&q=80',
+    imageUrl: THEMED_FALLBACK_IMAGES.fashion[0], // red sneakers
+    poster: THEMED_FALLBACK_IMAGES.fashion[0],
     category: '팝업스토어',
   },
   {
@@ -388,10 +610,10 @@ const MASTER_CURATED_POPUPS: PopupItem[] = [
     description: '세계적인 희귀 원두 시음 세션과 국내 신진 아티스트 커피 아트 전시. 리저브 전용 텀블러 증정 이벤트.',
     tags: ['#스타벅스리저브', '#테헤란로', '#커피시음', '#아트라운지', '#강남카페'],
     reservationUrl: 'https://www.starbucks.co.kr',
-    websiteUrl: 'https://m.search.naver.com/search.naver?query=스타벅스+리저브+강남+팝업',
+    websiteUrl: 'https://www.starbucks.co.kr',
     officialQuery: '스타벅스 리저브 강남 팝업 포스터',
-    imageUrl: 'https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?w=600&auto=format&fit=crop&q=80',
-    poster: 'https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?w=600&auto=format&fit=crop&q=80',
+    imageUrl: THEMED_FALLBACK_IMAGES.bakery_food[3], // specialty coffee
+    poster: THEMED_FALLBACK_IMAGES.bakery_food[3],
     category: '팝업스토어',
   },
   {
@@ -424,10 +646,10 @@ const MASTER_CURATED_POPUPS: PopupItem[] = [
     description: '12m 초대형 피카츄 풍선과 포켓몬 카드 게임 공식 배틀존, 한정판 오리지널 굿즈 스토어.',
     tags: ['#포켓몬페스타', '#잠실롯데월드몰', '#피카츄', '#아트리움', '#가족나들이'],
     reservationUrl: 'https://pokemonkorea.co.kr',
-    websiteUrl: 'https://m.search.naver.com/search.naver?query=잠실+롯데월드몰+포켓몬+팝업',
+    websiteUrl: 'https://pokemonkorea.co.kr',
     officialQuery: '잠실 롯데월드몰 포켓몬 팝업스토어 포스터',
-    imageUrl: 'https://images.unsplash.com/photo-1613771404784-3a5686aa2be3?w=600&auto=format&fit=crop&q=80',
-    poster: 'https://images.unsplash.com/photo-1613771404784-3a5686aa2be3?w=600&auto=format&fit=crop&q=80',
+    imageUrl: THEMED_FALLBACK_IMAGES.character[1], // Pokemon yellow
+    poster: THEMED_FALLBACK_IMAGES.character[1],
     category: '팝업스토어',
   },
   {
@@ -441,10 +663,10 @@ const MASTER_CURATED_POPUPS: PopupItem[] = [
     description: '수십만 개 레고 브릭으로 구현한 디오라마와 나만의 미니피겨 만들기 체험. 신제품 단독 할인 프로모션.',
     tags: ['#레고팝업', '#잠실월드몰', '#어린이체험', '#레고디오라마', '#키덜트'],
     reservationUrl: 'https://www.lego.com/ko-kr',
-    websiteUrl: 'https://m.search.naver.com/search.naver?query=잠실+롯데월드몰+레고+팝업',
+    websiteUrl: 'https://www.lego.com/ko-kr',
     officialQuery: '잠실 레고 팝업스토어 포스터',
-    imageUrl: 'https://images.unsplash.com/photo-1585366119957-e9730b6d0f60?w=600&auto=format&fit=crop&q=80',
-    poster: 'https://images.unsplash.com/photo-1585366119957-e9730b6d0f60?w=600&auto=format&fit=crop&q=80',
+    imageUrl: THEMED_FALLBACK_IMAGES.toy[2], // Lego bricks & figures
+    poster: THEMED_FALLBACK_IMAGES.toy[2],
     category: '팝업스토어',
   },
   {
@@ -458,10 +680,10 @@ const MASTER_CURATED_POPUPS: PopupItem[] = [
     description: '영국 빈티지 감성을 극대화한 특별 쇼룸. 잠실 단독 베이글 라인업과 리미티드 에코백, 머그컵 판매.',
     tags: ['#런던베이글뮤지엄', '#잠실맛집', '#베이글팝업', '#캐치테이블', '#웨이팅필수'],
     reservationUrl: 'https://catchtable.co.kr',
-    websiteUrl: 'https://m.search.naver.com/search.naver?query=런던베이글뮤지엄+잠실+팝업',
+    websiteUrl: 'https://catchtable.co.kr',
     officialQuery: '런던베이글뮤지엄 잠실 팝업스토어 포스터',
-    imageUrl: 'https://images.unsplash.com/photo-1509440159596-0249088772ff?w=600&auto=format&fit=crop&q=80',
-    poster: 'https://images.unsplash.com/photo-1509440159596-0249088772ff?w=600&auto=format&fit=crop&q=80',
+    imageUrl: THEMED_FALLBACK_IMAGES.bakery_food[0], // Fresh bagels
+    poster: THEMED_FALLBACK_IMAGES.bakery_food[0],
     category: '팝업스토어',
   },
   {
@@ -475,10 +697,10 @@ const MASTER_CURATED_POPUPS: PopupItem[] = [
     description: '긍정 에너지 가득한 최고심 일러스트 부적 증정 및 대형 포토존. 카카오페이 결제 시 한정판 키링 제공.',
     tags: ['#최고심', '#카카오페이', '#잠실팝업', '#행운부적', '#한정판키링'],
     reservationUrl: 'https://www.kakaopay.com',
-    websiteUrl: 'https://m.search.naver.com/search.naver?query=잠실+최고심+팝업스토어',
+    websiteUrl: 'https://www.kakaopay.com',
     officialQuery: '잠실 최고심 팝업스토어 포스터',
-    imageUrl: 'https://images.unsplash.com/photo-1513151233558-d860c5398176?w=600&auto=format&fit=crop&q=80',
-    poster: 'https://images.unsplash.com/photo-1513151233558-d860c5398176?w=600&auto=format&fit=crop&q=80',
+    imageUrl: THEMED_FALLBACK_IMAGES.character[4], // celebration pop art
+    poster: THEMED_FALLBACK_IMAGES.character[4],
     category: '팝업스토어',
   },
   {
@@ -492,52 +714,19 @@ const MASTER_CURATED_POPUPS: PopupItem[] = [
     description: '석촌호수와 어우러진 초대형 산리오 패밀리 벌룬 전시. 가을밤 야간 조명쇼 및 피크닉 존 운영.',
     tags: ['#산리오캐릭터즈', '#롯데월드타워', '#월드파크', '#석촌호수', '#야외전시'],
     reservationUrl: 'https://www.lwt.co.kr',
-    websiteUrl: 'https://m.search.naver.com/search.naver?query=잠실+산리오+월드파크+팝업',
+    websiteUrl: 'https://www.lwt.co.kr',
     officialQuery: '잠실 롯데월드타워 산리오 팝업스토어 포스터',
-    imageUrl: 'https://images.unsplash.com/photo-1506157786151-b8491531f063?w=600&auto=format&fit=crop&q=80',
-    poster: 'https://images.unsplash.com/photo-1506157786151-b8491531f063?w=600&auto=format&fit=crop&q=80',
+    imageUrl: THEMED_FALLBACK_IMAGES.character[0], // cute pink character
+    poster: THEMED_FALLBACK_IMAGES.character[0],
     category: '팝업스토어',
   },
 ]
 
-// 2. [인메모리 캐시 (1시간 = 3600초 유지)]
-let serverCachedPopups: PopupItem[] | null = null
+// [인메모리 캐시 (1시간 = 3600초 유지)]
+let serverCachedPopups: PopupItem[] = MASTER_CURATED_POPUPS
 let cacheExpiresAt = 0
 
-// 3. [네이버 이미지 검색 API를 통한 실시간 공식 포스터 추출]
-async function fetchNaverPosterImage(
-  query: string,
-  clientId: string,
-  clientSecret: string,
-): Promise<string | null> {
-  try {
-    const url = `https://openapi.naver.com/v1/search/image.json?query=${encodeURIComponent(query)}&display=1&sort=sim`
-    const res = await fetch(url, {
-      headers: {
-        'X-Naver-Client-Id': clientId,
-        'X-Naver-Client-Secret': clientSecret,
-      },
-      next: { revalidate: 3600 },
-      signal: AbortSignal.timeout(3000),
-    })
-
-    if (res.ok) {
-      const data = await res.json()
-      if (Array.isArray(data.items) && data.items.length > 0) {
-        const item = data.items[0]
-        const img = item.link || item.thumbnail
-        if (img && typeof img === 'string' && img.startsWith('http')) {
-          return img
-        }
-      }
-    }
-  } catch {
-    // 무시하고 기존 포스터 유지
-  }
-  return null
-}
-
-// 4. [Gemini AI 플래시 모델을 활용한 25~30선 실시간 팝업 큐레이션]
+// [Gemini AI 플래시 모델을 활용한 25~30선 실시간 팝업 큐레이션]
 async function curateWithGemini(apiKey: string): Promise<PopupItem[]> {
   const ai = new GoogleGenAI({ apiKey })
   const models = ['gemini-3.5-flash', 'gemini-3.8-flash', 'gemini-3.1-flash-lite', 'gemini-flash-latest']
@@ -585,9 +774,7 @@ async function curateWithGemini(apiKey: string): Promise<PopupItem[]> {
             const region = (item.region || '성수').trim()
             const id = item.id || `popup_${idx}_${Date.now()}`
             const fee = item.fee || '무료 관람 (현장 대기)'
-            const fallbackPoster =
-              MASTER_CURATED_POPUPS[idx % MASTER_CURATED_POPUPS.length]?.imageUrl ||
-              'https://images.unsplash.com/photo-1541701494587-cb58502866ab?w=600&auto=format&fit=crop&q=80'
+            const fallbackPoster = getThemedFallbackImage(item.title || '', item.tags || [], idx)
 
             return {
               id,
@@ -600,7 +787,10 @@ async function curateWithGemini(apiKey: string): Promise<PopupItem[]> {
               description: item.description || `${item.title} 팝업 행사. 현장 이벤트와 한정판 굿즈를 만나보세요.`,
               tags: Array.isArray(item.tags) ? item.tags : ['#팝업', `#${region}`, '#핫플레이스'],
               reservationUrl: item.reservationUrl || 'https://m.booking.naver.com',
-              websiteUrl: item.reservationUrl || 'https://m.search.naver.com/search.naver?query=' + encodeURIComponent(item.title || '팝업스토어'),
+              websiteUrl:
+                item.reservationUrl ||
+                'https://m.search.naver.com/search.naver?query=' +
+                  encodeURIComponent(item.title || '팝업스토어'),
               officialQuery: item.officialQuery || `${item.title} 포스터`,
               imageUrl: fallbackPoster,
               poster: fallbackPoster,
@@ -617,7 +807,9 @@ async function curateWithGemini(apiKey: string): Promise<PopupItem[]> {
   return []
 }
 
-// 5. [메인 API GET 핸들러]
+// -------------------------------------------------------------
+// [메인 API GET 핸들러]
+// -------------------------------------------------------------
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url)
   const regionParam = (searchParams.get('region') || searchParams.get('category') || '').trim()
@@ -647,24 +839,33 @@ export async function GET(request: Request) {
       popupsPool = MASTER_CURATED_POPUPS
     }
 
-    // 4) 네이버 이미지 검색 API (키가 등록된 경우 실제 포스터 매칭)
+    // 4) [1순위: og:image 추출 & 2순위: 네이버 이미지 검색 API] 병렬 해석
     const clientId = process.env.NAVER_CLIENT_ID
     const clientSecret = process.env.NAVER_CLIENT_SECRET
-    if (clientId && clientSecret) {
-      try {
-        // 상위 15개 팝업의 실시간 포스터 이미지를 병렬 매칭
-        const imagePromises = popupsPool.slice(0, 15).map(async (p) => {
-          const query = p.officialQuery || `${p.title} 포스터`
-          const realImg = await fetchNaverPosterImage(query, clientId, clientSecret)
-          if (realImg) {
-            p.imageUrl = realImg
-            p.poster = realImg
-          }
-        })
-        await Promise.allSettled(imagePromises)
-      } catch (err) {
-        console.warn('[popple-popups] Naver image search enrichment error:', err)
-      }
+
+    try {
+      const resolvePromises = popupsPool.map(async (p, idx) => {
+        const resolved = await resolvePopupPosterImage(
+          p.title,
+          [p.reservationUrl, p.websiteUrl],
+          clientId,
+          clientSecret,
+          p.tags || [],
+          idx,
+        )
+        if (resolved) {
+          p.imageUrl = resolved
+          p.poster = resolved
+        }
+      })
+
+      // 비동기 병렬로 최대 4초간 이미지 해석 실행
+      await Promise.race([
+        Promise.allSettled(resolvePromises),
+        new Promise((resolve) => setTimeout(resolve, 4000)),
+      ])
+    } catch (err) {
+      console.warn('[popple-popups] Poster image resolution error:', err)
     }
 
     // 5) 캐시 저장 (1시간)
