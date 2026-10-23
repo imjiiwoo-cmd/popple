@@ -30,8 +30,8 @@ export interface PoppleImageFallbackProps {
 /**
  * Popple 브랜드 공식 로고 기반 Fallback 컴포넌트
  * - 배경: 부드러운 연회색/미색 톤 (bg-slate-50)
- * - 중앙 상단: 3D 비눗방울 로고 (/images/logo-bubble.png, mix-blend-multiply, w-36~w-44)
- * - 중앙 하단: "이미지 준비 중입니다" 텍스트 (mt-2.5 sm:mt-3, text-xs text-slate-400 font-medium)
+ * - 중앙 상단: 3D 비눗방울 로고 (/images/logo-bubble.png, mix-blend-multiply, w-3/4 max-w-[200px])
+ * - 중앙 하단: "이미지 준비 중입니다" 텍스트 (mt-2.5, text-xs text-slate-400 font-medium)
  */
 export function PoppleImageFallback({
   className,
@@ -45,7 +45,7 @@ export function PoppleImageFallback({
         className,
       )}
     >
-      <div className="relative flex items-center justify-center max-w-full">
+      <div className="relative flex items-center justify-center w-full">
         <Image
           src="/images/logo-bubble.png"
           alt="Popple"
@@ -53,12 +53,12 @@ export function PoppleImageFallback({
           height={532}
           unoptimized
           className={cn(
-            'w-36 sm:w-44 max-w-[65%] h-auto object-contain mix-blend-multiply opacity-85 pointer-events-none drop-shadow-2xs transition-transform',
+            'w-3/4 max-w-[200px] h-auto object-contain mix-blend-multiply opacity-85 pointer-events-none drop-shadow-2xs transition-transform',
             logoClassName,
           )}
         />
       </div>
-      <span className="mt-2.5 sm:mt-3 text-[11px] sm:text-xs text-slate-400 font-medium tracking-tight truncate max-w-full px-1 select-none">
+      <span className="mt-2.5 text-xs text-slate-400 font-medium tracking-tight truncate max-w-full px-1 select-none">
         {text}
       </span>
     </div>
