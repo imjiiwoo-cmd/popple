@@ -2,6 +2,7 @@ import { GoogleGenAI } from '@google/genai'
 import type { PoppleEvent } from '@/lib/events'
 import type { Recommendation } from '@/lib/types'
 import { supabase } from '@/lib/supabaseClient'
+import { getCuratedPopups } from '@/app/api/popups/route'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
@@ -358,6 +359,7 @@ export async function POST(request: Request) {
   const formData = await request.formData().catch(() => null)
   const image = formData?.get('image')
   const areaCode = (formData?.get('areaCode') as string) || ''
+  const eventType = ((formData?.get('eventType') as string) || 'all').toLowerCase()
 
   if (!(image instanceof File)) {
     console.error('[popple] No image file provided in formData')
@@ -379,62 +381,131 @@ export async function POST(request: Request) {
   }
 
   try {
-    // 1. 한국관광공사 TourAPI 실시간 축제 목록 조회 (선택된 areaCode 반영, 종료된 행사 제외)
-    let { festivals, areaNotice } = await fetchLiveFestivals(tourApiKey, areaCode)
+    const areaName = areaCode && AREA_MAP[areaCode] ? AREA_MAP[areaCode].name : '전국'
+    let candidates: PoppleEvent[] = []
+    let areaNotice: string | undefined = undefined
 
-    // 만약 TourAPI 응답이 비어있을 경우 Supabase 실시간 축제 데이터 조회
-    if (festivals.length === 0) {
-      console.log('[popple] No live festivals from TourAPI. Checking Supabase...')
-      const today = getTodayDateString()
-      festivals = await fetchSupabaseFestivals(today)
+    // 1. 이벤트 유형에 따른 후보 목록(지역축제 / 팝업스토어 / 전체) 조회
+    if (eventType === 'popup') {
+      // 1) 팝업스토어만 추천
+      const popups = await getCuratedPopups()
+      candidates = popups.map((p) => ({
+        id: p.id,
+        title: p.title,
+        date: p.date,
+        location: p.location,
+        price: p.price || p.fee || '무료',
+        imageUrl: p.imageUrl || '',
+        poster: p.poster || p.imageUrl || '',
+        tags: p.tags || ['#팝업스토어'],
+        category: '팝업스토어',
+        description: p.description,
+        websiteUrl: p.reservationUrl || p.websiteUrl,
+      }))
+
+      if (areaCode && areaCode !== '1') {
+        areaNotice = `선택하신 [${areaName}] 지역에는 현재 진행 중인 팝업스토어가 적어, 트렌디한 서울 핫플레이스 팝업스토어로 추천해 드립니다.`
+      }
+    } else if (eventType === 'festival') {
+      // 2) 지역축제만 추천 (TourAPI + Supabase 폴백)
+      const liveResult = await fetchLiveFestivals(tourApiKey, areaCode)
+      let festivals = liveResult.festivals
+      areaNotice = liveResult.areaNotice
+
+      if (festivals.length === 0) {
+        console.log('[popple] No live festivals from TourAPI. Checking Supabase...')
+        const today = getTodayDateString()
+        festivals = await fetchSupabaseFestivals(today)
+      }
+      candidates = festivals
+    } else {
+      // 3) 전체 (지역축제 + 팝업스토어)
+      const [liveResult, popups] = await Promise.all([
+        fetchLiveFestivals(tourApiKey, areaCode).catch(() => ({ festivals: [], areaNotice: undefined })),
+        getCuratedPopups().catch(() => []),
+      ])
+
+      let festivals = liveResult.festivals
+      areaNotice = liveResult.areaNotice
+
+      if (festivals.length === 0) {
+        console.log('[popple] No live festivals from TourAPI. Checking Supabase...')
+        const today = getTodayDateString()
+        festivals = await fetchSupabaseFestivals(today)
+      }
+
+      const popupEvents: PoppleEvent[] = popups.map((p) => ({
+        id: p.id,
+        title: p.title,
+        date: p.date,
+        location: p.location,
+        price: p.price || p.fee || '무료',
+        imageUrl: p.imageUrl || '',
+        poster: p.poster || p.imageUrl || '',
+        tags: p.tags || ['#팝업스토어'],
+        category: '팝업스토어',
+        description: p.description,
+        websiteUrl: p.reservationUrl || p.websiteUrl,
+      }))
+
+      // 축제 12개 + 팝업 12개 조합
+      candidates = [
+        ...festivals.slice(0, 12),
+        ...popupEvents.slice(0, 12),
+      ]
     }
 
-    // 실제 진행 중인 축제가 없을 경우 가짜 샘플 행사를 절대 띄우지 않고 깔끔한 안내 반환
-    if (festivals.length === 0) {
-      console.warn('[popple] No active festivals found. Returning active notice.')
+    // 실제 진행 중인 행사가 없을 경우 깔끔한 안내 반환
+    if (candidates.length === 0) {
+      console.warn('[popple] No active event candidates found. Returning active notice.')
       return Response.json(
         {
-          error: '현재 지역 내 진행 중인 행사 정보를 불러오는 중입니다. 잠시 후 다시 시도해주세요.',
+          error: '현재 조건에 맞는 진행 중인 행사 정보를 불러오는 중입니다. 잠시 후 다시 시도해주세요.',
         },
         { status: 503 },
       )
     }
 
-    const areaName = areaCode && AREA_MAP[areaCode] ? AREA_MAP[areaCode].name : '전국'
+    const typeLabel =
+      eventType === 'popup'
+        ? '팝업스토어'
+        : eventType === 'festival'
+          ? '지역축제'
+          : '행사(지역축제 및 팝업스토어)'
 
-    // 2. Gemini에게 전달할 실제 진행 중인 축제 카탈로그 프롬프트 구성 (최대 20개)
-    const catalogPrompt = festivals
-      .slice(0, 20)
+    // 2. Gemini에게 전달할 실제 진행 중인 행사 카탈로그 프롬프트 구성 (최대 24개)
+    const catalogPrompt = candidates
+      .slice(0, 24)
       .map(
-        (f) =>
-          `- id: "${f.id}" | 축제명: "${f.title}" | 일시: "${f.date}" | 장소: "${f.location}" | 특징: ${f.description || f.title}`,
+        (c) =>
+          `- id: "${c.id}" | 유형: "${c.category || (c.id.startsWith('popup_') ? '팝업스토어' : '지역축제')}" | 명칭: "${c.title}" | 일시: "${c.date}" | 장소: "${c.location}" | 특징: ${c.description || c.title}`,
       )
       .join('\n')
 
-    const systemInstruction = `당신은 사용자가 업로드한 사진의 시각적 요소(색감, 조명, 계절감, 분위기, 장소, 피사체)와 감성적인 무드를 정밀하게 분석하여 가장 잘 어울리는 축제를 추천해주는 AI 큐레이터 "팝플(Popple)"입니다.
+    const systemInstruction = `당신은 사용자가 업로드한 사진의 시각적 요소(색감, 조명, 계절감, 분위기, 장소, 피사체)와 감성적인 무드를 정밀하게 분석하여 가장 잘 어울리는 ${typeLabel}를 추천해주는 AI 큐레이터 "팝플(Popple)"입니다.
 
-현재 사용자가 선택한 추천 지역은 [${areaName}]입니다.
-반드시 업로드된 사진의 이미지 데이터를 직접 분석하고, 제공되는 [실시간 축제 목록] 중에서 사진의 분위기와 가장 어울리는 행사 '단 1개'를 매칭하여 아래 JSON 스키마 형식으로 응답하세요.
+현재 사용자가 선택한 추천 지역은 [${areaName}], 추천 희망 유형은 [${typeLabel}]입니다.
+반드시 업로드된 사진의 이미지 데이터를 직접 분석하고, 제공되는 [실시간 추천 ${typeLabel} 목록] 중에서 사진의 분위기와 가장 어울리는 행사 '단 1개'를 매칭하여 아래 JSON 스키마 형식으로 응답하세요.
 
-[실시간 축제 목록]
+[실시간 추천 ${typeLabel} 목록]
 ${catalogPrompt}
 
 [응답 JSON 스키마]
 {
   "recommended_event_id": "제공된 목록의 id 중 사진의 무드와 가장 어울리는 행사의 id",
   "mood_tags": ["#키워드1", "#키워드2", "#키워드3"],
-  "mood_headline": "사진의 핵심 분위기를 함축한 짧은 헤드라인 (예: 가을바람과 낭만적인 노을빛)",
-  "mood_summary": "사진의 색감이나 분위기를 다정하게 요약한 설명 문장 (예: 붉게 물든 하늘과 편안한 풍경에서 여유로운 무드가 느껴져요.)",
+  "mood_headline": "사진의 핵심 분위기를 함축한 짧은 헤드라인 (예: 감각적인 힙스터 감성의 팝업 무드 / 가을바람과 낭만적인 노을빛)",
+  "mood_summary": "사진의 색감이나 분위기를 다정하게 요약한 설명 문장 (예: 트렌디하고 세련된 오브제에서 감각적인 바이브가 느껴져요.)",
   "detailed_reason": {
-    "visual_mood": "사진에서 관찰되는 시각적 분위기 (예: 따스한 색감과 탁 트인 야외 풍경)",
-    "event_feature": "추천한 축제의 핵심적인 매력 및 특징 (예: 강변을 따라 펼쳐지는 가을 정취와 다양한 먹거리)",
-    "match_reason": "사진의 무드와 축제의 특징이 연결되는 구체적인 이유 (예: 사진 속 평화롭고 낭만적인 분위기가 축제 현장의 여유로운 정취와 잘 어울려요.)"
+    "visual_mood": "사진에서 관찰되는 시각적 분위기 (예: 감각적인 인테리어와 모던한 무드)",
+    "event_feature": "추천한 행사의 핵심적인 매력 및 특징 (예: 한정판 굿즈와 감각적인 포토존이 마련된 핫플레이스)",
+    "match_reason": "사진의 무드와 행사의 특징이 연결되는 구체적인 이유 (예: 사진 속 트렌디하고 힙한 분위기가 행사 공간의 감성과 완벽히 어우러져요.)"
   }
 }
 
 주의사항:
 - 반드시 순수한 JSON 형식으로만 응답해야 합니다 (마크다운 코드블록 없이 순수 JSON만 반환).
-- recommended_event_id는 반드시 제공된 축제 목록의 id 중 하나여야 합니다.
+- recommended_event_id는 반드시 제공된 목록의 id 중 하나여야 합니다.
 - mood_tags는 반드시 #으로 시작하는 2~3개의 감성 키워드여야 합니다.`
 
     // 3. 사진 데이터 준비 및 Gemini Vision 분석
@@ -467,25 +538,25 @@ ${catalogPrompt}
     }
 
     const eventId = parsed.recommended_event_id || parsed.eventId
-    const matchedEvent = festivals.find((f) => f.id === eventId) || festivals[0]
+    const matchedEvent = candidates.find((f) => f.id === eventId) || candidates[0]
 
     const moodTags =
       Array.isArray(parsed.mood_tags) && parsed.mood_tags.length > 0
         ? parsed.mood_tags.map((t) => (String(t).startsWith('#') ? String(t) : `#${t}`))
-        : ['#감성', '#진행중축제', '#나들이']
+        : ['#감성', '#맞춤추천', '#나들이']
 
     const visualMood =
       parsed.detailed_reason?.visual_mood || '사진의 시각적 요소와 색감이 돋보이는 분위기'
     const eventFeature =
       parsed.detailed_reason?.event_feature ||
       matchedEvent.description ||
-      '현장의 생생한 매력을 경험할 수 있는 축제'
+      '현장의 생생한 매력을 경험할 수 있는 행사'
     const matchReason =
       parsed.detailed_reason?.match_reason ||
       `사진에서 느껴지는 분위기와 "${matchedEvent.title}"의 정취가 자연스럽게 어우러져요.`
 
     // 서브 추천 행사 최대 2개 선정 (실제 행사 목록 중에서만 추출, 가짜 목업 완전 배제)
-    const subEvents = festivals.filter((f) => f.id !== matchedEvent.id).slice(0, 2)
+    const subEvents = candidates.filter((f) => f.id !== matchedEvent.id).slice(0, 2)
 
     const result: Recommendation = {
       recommended_event_id: matchedEvent.id,

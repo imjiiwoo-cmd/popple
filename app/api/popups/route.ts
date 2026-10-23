@@ -149,7 +149,7 @@ async function resolvePopupPosterImage(
 // -------------------------------------------------------------
 // [실제 서울 5대 팝업 성지 28선 마스터 데이터셋]
 // -------------------------------------------------------------
-const MASTER_CURATED_POPUPS: PopupItem[] = [
+export const MASTER_CURATED_POPUPS: PopupItem[] = [
   // --- 성수 (6) ---
   {
     id: 'popup_seongsu_01',
@@ -722,12 +722,9 @@ async function curateWithGemini(apiKey: string): Promise<PopupItem[]> {
 }
 
 // -------------------------------------------------------------
-// [메인 API GET 핸들러]
+// [큐레이션된 팝업스토어 목록 조회 함수 (API 라우트 및 AI 추천 공용)]
 // -------------------------------------------------------------
-export async function GET(request: Request) {
-  const { searchParams } = new URL(request.url)
-  const regionParam = (searchParams.get('region') || searchParams.get('category') || '').trim()
-
+export async function getCuratedPopups(regionParam?: string): Promise<PopupItem[]> {
   const now = Date.now()
   let popupsPool: PopupItem[] = []
 
@@ -807,12 +804,22 @@ export async function GET(request: Request) {
   }
 
   // 필터링 결과에도 시각적 우선 정렬 유지
-  filtered = sortPopupsVisualFirst(filtered)
+  return sortPopupsVisualFirst(filtered)
+}
+
+// -------------------------------------------------------------
+// [메인 API GET 핸들러]
+// -------------------------------------------------------------
+export async function GET(request: Request) {
+  const { searchParams } = new URL(request.url)
+  const regionParam = (searchParams.get('region') || searchParams.get('category') || '').trim()
+
+  const filtered = await getCuratedPopups(regionParam)
 
   return Response.json({
     popups: filtered,
     total: filtered.length,
-    allCount: popupsPool.length,
-    cached: now < cacheExpiresAt,
+    allCount: serverCachedPopups.length,
+    cached: Date.now() < cacheExpiresAt,
   })
 }

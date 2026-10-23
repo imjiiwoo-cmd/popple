@@ -7,6 +7,7 @@ import { supabase } from '@/lib/supabaseClient'
 import { HomeScreen } from './home-screen'
 import { AppHeader } from './app-header'
 import { AreaSelect } from './area-select'
+import { EventTypeSelect, type EventTypeValue } from './event-type-select'
 import { ImageInputZone } from './image-input-zone'
 import { LoadingState } from './loading-state'
 import { ResultCard } from './result-card'
@@ -37,6 +38,7 @@ export function PoppleApp({
   const [previousMode, setPreviousMode] = useState<NavMode>(initialMode === 'lens' ? 'home' : initialMode as NavMode)
 
   const [file, setFile] = useState<File | null>(null)
+  const [eventType, setEventType] = useState<EventTypeValue>('all')
   const [areaCode, setAreaCode] = useState<string>('')
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
   const [lensStatus, setLensStatus] = useState<LensStatus>('idle')
@@ -73,6 +75,9 @@ export function PoppleApp({
     try {
       const body = new FormData()
       body.append('image', await resizeImage(file), 'photo.jpg')
+      if (eventType) {
+        body.append('eventType', eventType)
+      }
       if (areaCode) {
         body.append('areaCode', areaCode)
       }
@@ -507,11 +512,14 @@ export function PoppleApp({
 
             {lensStatus === 'idle' && (
               <div className="flex flex-col gap-4">
-                <div className="flex items-center justify-between px-0.5">
-                  <span className="text-xs font-bold text-muted-foreground">
-                    추천받을 축제 지역
+                <div className="flex items-center justify-between gap-1.5 px-0.5">
+                  <span className="text-xs font-bold text-muted-foreground shrink-0">
+                    행사 필터링
                   </span>
-                  <AreaSelect value={areaCode} onChange={setAreaCode} />
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    <EventTypeSelect value={eventType} onChange={setEventType} />
+                    <AreaSelect value={areaCode} onChange={setAreaCode} />
+                  </div>
                 </div>
 
                 <ImageInputZone

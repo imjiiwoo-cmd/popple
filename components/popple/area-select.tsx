@@ -64,7 +64,7 @@ export function AreaSelect({ value, onChange, disabled = false }: AreaSelectProp
         aria-haspopup="listbox"
         aria-expanded={isOpen}
         className={cn(
-          'inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-3 py-1.5 text-xs font-semibold text-foreground shadow-xs outline-none transition-all',
+          'inline-flex items-center gap-1 rounded-full border border-border bg-card px-2.5 py-1.5 text-[11px] sm:text-xs font-semibold text-foreground shadow-xs outline-none transition-all whitespace-nowrap',
           'hover:border-primary/50 hover:bg-accent/40 focus-visible:ring-2 focus-visible:ring-ring/30',
           disabled && 'opacity-50 cursor-not-allowed',
         )}
