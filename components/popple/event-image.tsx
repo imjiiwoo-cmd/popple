@@ -29,9 +29,9 @@ export interface PoppleImageFallbackProps {
 
 /**
  * Popple 브랜드 공식 로고 기반 Fallback 컴포넌트
- * - 배경: 부드러운 연회색/미색 톤 (bg-slate-50/90)
- * - 중앙 상단: 공식 Popple 로고 (가로 폭 76~84px, opacity-70)
- * - 중앙 하단: "이미지 준비 중입니다" 텍스트 (text-xs text-slate-400 font-medium)
+ * - 배경: 부드러운 연회색/미색 톤 (bg-slate-50)
+ * - 중앙 상단: 3D 비눗방울 로고 (/images/logo-bubble.png, mix-blend-multiply, w-36~w-44)
+ * - 중앙 하단: "이미지 준비 중입니다" 텍스트 (mt-2.5 sm:mt-3, text-xs text-slate-400 font-medium)
  */
 export function PoppleImageFallback({
   className,
@@ -41,21 +41,24 @@ export function PoppleImageFallback({
   return (
     <div
       className={cn(
-        'w-full h-full flex flex-col items-center justify-center gap-2 bg-slate-50/90 select-none p-3 text-center border border-slate-100/60',
+        'w-full h-full flex flex-col items-center justify-center bg-slate-50 select-none p-2.5 sm:p-3 text-center border border-slate-100/60',
         className,
       )}
     >
-      <div className="relative flex items-center justify-center">
+      <div className="relative flex items-center justify-center max-w-full">
         <Image
-          src="/images/popple-logo.png"
-          alt="Popple 로고"
-          width={84}
-          height={34}
+          src="/images/logo-bubble.png"
+          alt="Popple"
+          width={1024}
+          height={532}
           unoptimized
-          className={cn('w-[76px] sm:w-[84px] h-auto object-contain opacity-70 pointer-events-none', logoClassName)}
+          className={cn(
+            'w-36 sm:w-44 max-w-[65%] h-auto object-contain mix-blend-multiply opacity-85 pointer-events-none drop-shadow-2xs transition-transform',
+            logoClassName,
+          )}
         />
       </div>
-      <span className="text-[11px] sm:text-xs text-slate-400 font-medium tracking-tight">
+      <span className="mt-2.5 sm:mt-3 text-[11px] sm:text-xs text-slate-400 font-medium tracking-tight truncate max-w-full px-1 select-none">
         {text}
       </span>
     </div>
