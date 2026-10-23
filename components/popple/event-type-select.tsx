@@ -13,7 +13,7 @@ export type EventTypeOption = {
 }
 
 export const EVENT_TYPE_OPTIONS: EventTypeOption[] = [
-  { label: '전체 (축제+팝업)', shortLabel: '전체', value: 'all' },
+  { label: '전체', shortLabel: '전체', value: 'all' },
   { label: '지역축제', shortLabel: '지역축제', value: 'festival' },
   { label: '팝업스토어', shortLabel: '팝업스토어', value: 'popup' },
 ]

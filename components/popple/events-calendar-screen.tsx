@@ -18,6 +18,7 @@ import {
 } from 'lucide-react'
 import { type PoppleEvent, sortPopupsVisualFirst } from '@/lib/events'
 import type { CalendarFestival } from '@/app/api/festivals/route'
+import { cn } from '@/lib/utils'
 
 interface EventsCalendarScreenProps {
   onOpenHome: () => void
@@ -109,6 +110,59 @@ function getWeekOfMonthText(monday: Date): string {
   const weekLabels = ['첫째', '둘째', '셋째', '넷째', '다섯째', '여섯째']
   const label = weekLabels[Math.min(Math.max(weekNum - 1, 0), weekLabels.length - 1)] || `${weekNum}째`
   return `${month}월 ${label} 주`
+}
+
+/**
+ * 행사 날짜 범위 파싱 유틸리티 (YYYYMMDD 형식의 startDate, endDate 반환)
+ */
+function parseEventDateRange(
+  dateStr?: string,
+  startStr?: string,
+  endStr?: string,
+): { startDate: string; endDate: string } {
+  if (startStr && startStr.length === 8 && endStr && endStr.length === 8) {
+    return { startDate: startStr, endDate: endStr }
+  }
+  if (!dateStr) {
+    return { startDate: '20261001', endDate: '20261031' }
+  }
+  const numbers = dateStr.match(/\d+/g) || []
+  const n0 = numbers[0] || ''
+  const n1 = numbers[1] || ''
+  const n2 = numbers[2] || ''
+  const n3 = numbers[3] || ''
+  const n4 = numbers[4] || ''
+
+  if (numbers.length >= 5 && n0.length === 4) {
+    const yyyy = n0
+    const mm1 = n1.padStart(2, '0')
+    const dd1 = n2.padStart(2, '0')
+    const mm2 = n3.padStart(2, '0')
+    const dd2 = n4.padStart(2, '0')
+    return {
+      startDate: `${yyyy}${mm1}${dd1}`,
+      endDate: `${yyyy}${mm2}${dd2}`,
+    }
+  } else if (numbers.length >= 4 && n0.length <= 2) {
+    const yyyy = '2026'
+    const mm1 = n0.padStart(2, '0')
+    const dd1 = n1.padStart(2, '0')
+    const mm2 = n2.padStart(2, '0')
+    const dd2 = n3.padStart(2, '0')
+    return {
+      startDate: `${yyyy}${mm1}${dd1}`,
+      endDate: `${yyyy}${mm2}${dd2}`,
+    }
+  } else if (numbers.length >= 3 && n0.length === 4) {
+    const yyyy = n0
+    const mm1 = n1.padStart(2, '0')
+    const dd1 = n2.padStart(2, '0')
+    return {
+      startDate: `${yyyy}${mm1}${dd1}`,
+      endDate: `${yyyy}${mm1}${dd1}`,
+    }
+  }
+  return { startDate: '20261001', endDate: '20261031' }
 }
 
 /**
@@ -364,9 +418,37 @@ export function EventsCalendarScreen({
     })
   }
 
+  // 필터(지역/행사종류)가 적용된 특정 날짜의 팝업스토어 목록
+  const getFilteredPopupsOnDate = (dateObj: Date): PoppleEvent[] => {
+    if (selectedEventType === '지역축제') {
+      return []
+    }
+
+    const dateStr = toDateString(dateObj)
+    return popups.filter((p) => {
+      // 지역 필터링
+      if (!matchesRegion(p.location || '', p.title || '', selectedRegion)) {
+        return false
+      }
+
+      // 날짜 범위 파싱 및 진행 여부 판정
+      const range = parseEventDateRange(p.date, p.startDate, p.endDate)
+      const start = range.startDate
+      const end = range.endDate
+
+      const isOpen = start <= dateStr && dateStr <= end
+      if (!isOpen) return false
+
+      // 오늘 날짜 기준 종료된 팝업 제외
+      if (end && end < todayStr) return false
+
+      return true
+    })
+  }
+
   // 특정 날짜에 현재 선택된 필터(지역/행사종류)가 적용된 진행 중 축제 데이터 여부 판정 (인디케이터 빨간 점)
   const hasFestivalOnDate = (dateObj: Date): boolean => {
-    return getFilteredFestivalsOnDate(dateObj).length > 0
+    return getFilteredFestivalsOnDate(dateObj).length > 0 || getFilteredPopupsOnDate(dateObj).length > 0
   }
 
   // 날짜 칩 클릭 시 해당 날짜로 선택 및 스크롤
@@ -383,7 +465,20 @@ export function EventsCalendarScreen({
   const weekFestivalGroups = useMemo(() => {
     if (selectedEventType === '팝업스토어') return []
     return weekDays.map((d) => {
-      const events = getFilteredFestivalsOnDate(d)
+      const fEvents = getFilteredFestivalsOnDate(d)
+      const pEvents = selectedEventType === '전체 행사' ? getFilteredPopupsOnDate(d) : []
+      const events: (CalendarFestival | PoppleEvent)[] = [
+        ...fEvents,
+        ...pEvents.map((p) => {
+          const range = parseEventDateRange(p.date, p.startDate, p.endDate)
+          return {
+            ...p,
+            startDate: range.startDate,
+            endDate: range.endDate,
+            category: '팝업스토어',
+          }
+        }),
+      ]
       return {
         date: d,
         dateKey: toDateString(d),
@@ -393,7 +488,7 @@ export function EventsCalendarScreen({
         isSelected: isSameDate(d, selectedDate),
       }
     })
-  }, [weekDays, festivals, selectedRegion, selectedEventType, selectedDate])
+  }, [weekDays, festivals, popups, selectedRegion, selectedEventType, selectedDate])
 
   // 시안과 동일하게 행사가 있거나 현재 선택된 날짜인 그룹만 노출
   const visibleGroups = useMemo(() => {
@@ -487,15 +582,21 @@ export function EventsCalendarScreen({
               {getWeekOfMonthText(currentMonday)}
             </span>
 
-            {/* 축제 데이터 범례 (빨간 점) */}
-            <div className="flex items-center gap-1.5 text-xs font-bold text-slate-500">
-              <span className="size-2 rounded-full bg-rose-500 inline-block" />
-              <span>지역축제</span>
+            {/* 축제 및 팝업 데이터 범례 */}
+            <div className="flex items-center gap-2.5 text-xs font-bold text-slate-500">
+              <div className="flex items-center gap-1">
+                <span className="size-2 rounded-full bg-rose-500 inline-block" />
+                <span>지역축제</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <span className="size-2 rounded-full bg-[#1884F7] inline-block" />
+                <span>팝업스토어</span>
+              </div>
             </div>
           </div>
 
           {/* [2. 달력 좌우 화살표 위치 조정]: [< 화살표] [월~일 날짜 영역] [> 화살표] 수평(Flex) 정렬 */}
-          <div className="flex items-center gap-1.5 -mx-1">
+          <div className="flex items-center gap-1 -mx-1">
             {/* 좌측 이전 주 이동 화살표 (<) */}
             <button
               type="button"
@@ -507,10 +608,14 @@ export function EventsCalendarScreen({
             </button>
 
             {/* 주간 7일 날짜 칩 영역 */}
-            <div className="flex-1 flex items-center justify-between gap-1 min-w-0">
+            <div className="flex-1 flex items-center justify-between gap-0.5 sm:gap-1 min-w-0">
               {weekDays.map((dateObj, idx) => {
                 const isSelected = isSameDate(dateObj, selectedDate)
-                const hasEvents = hasFestivalOnDate(dateObj)
+                const festEvents = getFilteredFestivalsOnDate(dateObj)
+                const popupEvents = getFilteredPopupsOnDate(dateObj)
+                const festCount = festEvents.length
+                const popupCount = popupEvents.length
+                const totalCount = festCount + popupCount
                 const dayLabel = DAY_LABELS[idx] // 월 ~ 일
 
                 return (
@@ -518,40 +623,82 @@ export function EventsCalendarScreen({
                     key={toDateString(dateObj)}
                     type="button"
                     onClick={() => handleSelectDateChip(dateObj)}
-                    className={`flex flex-col items-center justify-between py-2 px-1 rounded-full flex-1 transition-all cursor-pointer min-w-0 ${
+                    className={cn(
+                      'flex flex-col items-center justify-between py-2 px-0.5 rounded-2xl flex-1 transition-all cursor-pointer min-w-0 h-[78px]',
                       isSelected
-                        ? 'bg-[#1884F7] text-white shadow-md shadow-sky-500/25 h-[76px]'
-                        : 'text-slate-700 hover:bg-slate-50 h-[76px]'
-                    }`}
+                        ? 'bg-[#1884F7] text-white shadow-md shadow-sky-500/25 ring-2 ring-[#1884F7]/40 ring-offset-1'
+                        : 'text-slate-700 hover:bg-slate-50',
+                    )}
                   >
                     {/* 요일 */}
                     <span
-                      className={`text-[12px] font-medium leading-none ${
-                        isSelected ? 'text-white/90 font-bold' : 'text-slate-400'
-                      }`}
+                      className={cn(
+                        'text-[11px] sm:text-[12px] font-medium leading-none',
+                        isSelected ? 'text-white/90 font-bold' : 'text-slate-400',
+                      )}
                     >
                       {dayLabel}
                     </span>
 
                     {/* 날짜 숫자 */}
                     <span
-                      className={`text-[17px] font-black leading-none ${
-                        isSelected ? 'text-white' : 'text-slate-800'
-                      }`}
+                      className={cn(
+                        'text-[16px] sm:text-[17px] font-black leading-none my-0.5',
+                        isSelected ? 'text-white' : 'text-slate-800',
+                      )}
                     >
                       {dateObj.getDate()}
                     </span>
 
-                    {/* 축제 데이터 연동: 당일 열리고 있는 행사가 있다면 하단 중앙에 깔끔한 빨간 점(● / bg-rose-500) */}
-                    <div className="h-2 flex items-center justify-center">
-                      {hasEvents ? (
-                        <span
-                          className={`size-1.5 rounded-full ${
-                            isSelected ? 'bg-white shadow-xs' : 'bg-rose-500'
-                          }`}
-                        />
+                    {/* 행사 데이터 연동 및 건수 뱃지 (0건인 경우 점과 숫자 미노출) */}
+                    <div className="h-4 flex items-center justify-center">
+                      {totalCount > 0 ? (
+                        <div className="flex items-center justify-center gap-1 leading-none">
+                          {festCount > 0 && (
+                            <span
+                              className="inline-flex items-center gap-0.5"
+                              title={`지역축제 ${festCount}건`}
+                            >
+                              <span
+                                className={cn(
+                                  'size-1.5 rounded-full shrink-0',
+                                  isSelected ? 'bg-rose-300 ring-1 ring-white/50' : 'bg-rose-500',
+                                )}
+                              />
+                              <span
+                                className={cn(
+                                  'text-[10px] font-mono font-bold leading-none',
+                                  isSelected ? 'text-white' : 'text-slate-600',
+                                )}
+                              >
+                                {festCount}
+                              </span>
+                            </span>
+                          )}
+                          {popupCount > 0 && (
+                            <span
+                              className="inline-flex items-center gap-0.5"
+                              title={`팝업스토어 ${popupCount}건`}
+                            >
+                              <span
+                                className={cn(
+                                  'size-1.5 rounded-full shrink-0',
+                                  isSelected ? 'bg-white' : 'bg-[#1884F7]',
+                                )}
+                              />
+                              <span
+                                className={cn(
+                                  'text-[10px] font-mono font-bold leading-none',
+                                  isSelected ? 'text-white' : 'text-slate-600',
+                                )}
+                              >
+                                {popupCount}
+                              </span>
+                            </span>
+                          )}
+                        </div>
                       ) : (
-                        <span className="size-1.5" />
+                        <span className="size-1.5 opacity-0" />
                       )}
                     </div>
                   </button>
