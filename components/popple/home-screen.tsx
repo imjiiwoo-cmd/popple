@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
+import { EventImage } from './event-image'
 import {
   Search,
   Camera,
@@ -549,11 +550,10 @@ export function HomeScreen({
                     className="flex cursor-pointer items-center gap-3.5 rounded-2xl border border-slate-200/80 bg-white p-3 shadow-xs transition-all hover:border-[#1884F7]/40 hover:shadow-sm active:scale-[0.99]"
                   >
                     <div className="relative aspect-[3/4] w-18 shrink-0 overflow-hidden rounded-xl bg-slate-100">
-                      <Image
-                        src={ev.imageUrl || ev.poster || '/events/rock-festival.png'}
+                      <EventImage
+                        src={ev.imageUrl || ev.poster}
                         alt={ev.title}
                         fill
-                        unoptimized
                         className="object-cover"
                       />
                       {ev.category && (
@@ -665,11 +665,10 @@ export function HomeScreen({
                     className="flex cursor-pointer items-center gap-3.5 rounded-2xl border border-slate-200/80 bg-white p-3 shadow-xs transition-all hover:border-[#1884F7]/40 hover:shadow-sm active:scale-[0.99]"
                   >
                     <div className="relative aspect-[3/4] w-18 shrink-0 overflow-hidden rounded-xl bg-slate-100">
-                      <Image
-                        src={ev.imageUrl || ev.poster || '/events/rock-festival.png'}
+                      <EventImage
+                        src={ev.imageUrl || ev.poster}
                         alt={ev.title}
                         fill
-                        unoptimized
                         className="object-cover"
                       />
                       {ev.category && (
@@ -812,12 +811,11 @@ export function HomeScreen({
                         tabIndex={0}
                         className="group relative h-full w-full shrink-0 cursor-pointer overflow-hidden transition-transform active:scale-[0.99]"
                       >
-                        <Image
-                          src={ev.imageUrl || ev.poster || '/events/rock-festival.png'}
+                        <EventImage
+                          src={ev.imageUrl || ev.poster}
                           alt={ev.title}
                           fill
                           priority={idx === 0}
-                          unoptimized
                           className="object-cover transition-transform duration-500 group-hover:scale-105"
                         />
 
@@ -967,11 +965,10 @@ export function HomeScreen({
                     className="shrink-0 w-64 rounded-2xl border border-slate-200/80 bg-white overflow-hidden shadow-xs cursor-pointer active:scale-[0.99] transition-transform"
                   >
                     <div className="relative aspect-[4/3] w-full bg-slate-100">
-                      <Image
-                        src={ev.imageUrl || ev.poster || '/events/jazz-picnic.png'}
+                      <EventImage
+                        src={ev.imageUrl || ev.poster}
                         alt={ev.title}
                         fill
-                        unoptimized
                         className="object-cover"
                       />
                       <span className="absolute top-2.5 left-2.5 z-10 rounded-md bg-[#1884F7] px-2 py-0.5 text-[10px] font-bold text-white shadow-xs">

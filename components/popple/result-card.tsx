@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import type { Recommendation } from '@/lib/types'
 import type { PoppleEvent } from '@/lib/events'
+import { EventImage } from './event-image'
 
 type ResultCardProps = {
   result: Recommendation
@@ -32,21 +33,13 @@ function SubEventCard({ event, onClick }: { event: PoppleEvent; onClick?: () => 
       className="flex cursor-pointer items-center gap-3 rounded-xl border border-border/80 bg-card p-2.5 shadow-xs transition-all hover:border-primary/50 hover:bg-accent/30 active:scale-[0.99]"
     >
       <div className="relative aspect-[3/4] w-14 shrink-0 overflow-hidden rounded-lg bg-muted">
-        {failed || !imageSrc ? (
-          <div className="flex h-full w-full items-center justify-center text-muted-foreground">
-            <ImageOff className="size-4" aria-hidden="true" />
-          </div>
-        ) : (
-          <Image
-            src={imageSrc}
-            alt={`${event.title} 포스터`}
-            width={120}
-            height={160}
-            unoptimized
-            onError={() => setFailed(true)}
-            className="aspect-[3/4] h-full w-full object-cover"
-          />
-        )}
+        <EventImage
+          src={imageSrc}
+          alt={`${event.title} 포스터`}
+          fill
+          sizes="60px"
+          className="aspect-[3/4] h-full w-full object-cover"
+        />
       </div>
 
       <div className="flex min-w-0 flex-1 flex-col justify-center gap-0.5 break-keep">
@@ -153,23 +146,14 @@ export function ResultCard({ result, onReset, onSelectEvent }: ResultCardProps) 
           <div className="flex gap-3.5">
             {/* 포스터 이미지 */}
             <div className="relative aspect-[3/4] w-[40%] shrink-0 self-start overflow-hidden rounded-xl bg-muted">
-              {posterFailed || !imageSrc ? (
-                <div className="flex h-full w-full flex-col items-center justify-center gap-1.5 text-muted-foreground">
-                  <ImageOff className="size-7" aria-hidden="true" />
-                  <span className="text-xs">이미지 없음</span>
-                </div>
-              ) : (
-                <Image
-                  src={imageSrc}
-                  alt={`${event.title} 포스터`}
-                  width={300}
-                  height={400}
-                  unoptimized
-                  onError={() => setPosterFailed(true)}
-                  className="aspect-[3/4] h-full w-full object-cover"
-                  priority
-                />
-              )}
+              <EventImage
+                src={imageSrc}
+                alt={`${event.title} 포스터`}
+                fill
+                priority
+                sizes="(max-width: 640px) 40vw, 200px"
+                className="aspect-[3/4] h-full w-full object-cover"
+              />
               <span className="absolute top-2 left-2 z-10 rounded-md bg-destructive/90 px-2 py-0.5 text-[10px] font-bold text-primary-foreground shadow-sm backdrop-blur-xs">
                 {categoryLabel}
               </span>

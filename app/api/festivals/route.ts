@@ -111,8 +111,7 @@ export async function GET(request: Request) {
 
         for (const [idx, item] of items.entries()) {
           const rawImage = (item.firstimage || item.firstimage2 || '').trim()
-          const fallbackPoster = '/events/rock-festival.png'
-          const imageUrl = rawImage.startsWith('http') ? rawImage : fallbackPoster
+          const imageUrl = rawImage.startsWith('http') ? rawImage : ''
 
           const title =
             item.title?.replace(/&amp;/g, '&')?.replace(/&lt;/g, '<')?.replace(/&gt;/g, '>') ||

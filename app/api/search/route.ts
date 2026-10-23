@@ -652,7 +652,12 @@ export async function GET(request: Request) {
           return b.score - a.score
         }
 
-        // 2순위: 진행 중인 행사 우선
+        // 2순위: 실제 포스터 이미지가 있는 행사 우선
+        const hasImgA = Boolean(a.item.firstimage || a.item.firstimage2) ? 1 : 0
+        const hasImgB = Boolean(b.item.firstimage || b.item.firstimage2) ? 1 : 0
+        if (hasImgA !== hasImgB) return hasImgB - hasImgA
+
+        // 3순위: 진행 중인 행사 우선
         const startA = (a.item.eventstartdate || '').trim() || '99999999'
         const startB = (b.item.eventstartdate || '').trim() || '99999999'
         const endA = (a.item.eventenddate || startA).trim()
@@ -664,7 +669,7 @@ export async function GET(request: Request) {
         if (isOngoingA && !isOngoingB) return -1
         if (!isOngoingA && isOngoingB) return 1
 
-        // 3순위: 시작일 오름차순
+        // 4순위: 시작일 오름차순
         if (startA !== startB) {
           return startA.localeCompare(startB)
         }
@@ -675,8 +680,7 @@ export async function GET(request: Request) {
       tourEvents = scoredItems.map((scored, idx) => {
         const item = scored.item
         const rawImage = (item.firstimage || item.firstimage2 || '').trim()
-        const fallbackPoster = '/events/rock-festival.png'
-        const imageUrl = rawImage.startsWith('http') ? rawImage : fallbackPoster
+        const imageUrl = rawImage.startsWith('http') ? rawImage : ''
 
         const title =
           item.title?.replace(/&amp;/g, '&')?.replace(/&lt;/g, '<')?.replace(/&gt;/g, '>') ||

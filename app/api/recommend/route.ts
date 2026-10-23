@@ -201,7 +201,7 @@ async function fetchLiveFestivals(
 
     const cleanedEvents: PoppleEvent[] = candidates.map((item, idx) => {
       const rawImage = (item.firstimage || item.firstimage2 || '').trim()
-      const imageUrl = rawImage.startsWith('http') ? rawImage : '/events/rock-festival.png'
+      const imageUrl = rawImage.startsWith('http') ? rawImage : ''
 
       const addrTokens = (item.addr1 || '').split(' ').filter(Boolean)
       const locationShort = addrTokens.slice(0, 2).join(' ') || '전국'
@@ -259,8 +259,8 @@ async function fetchSupabaseFestivals(today: string): Promise<PoppleEvent[]> {
         date: formatFestivalDate(item.start_date || item.startDate, item.end_date || item.endDate),
         location: item.location || item.addr1 || '상세 장소는 주최측 공지 참조',
         price: item.price || '무료 관람 (체험비 별도)',
-        imageUrl: item.image_url || item.poster || '/events/rock-festival.png',
-        poster: item.image_url || item.poster || '/events/rock-festival.png',
+        imageUrl: item.image_url || item.poster || '',
+        poster: item.image_url || item.poster || '',
         tags: Array.isArray(item.tags) ? item.tags : ['진행중축제', '문화행사'],
         category: item.category || '축제/행사',
         description: item.description || `${item.title} 실시간 행사`,

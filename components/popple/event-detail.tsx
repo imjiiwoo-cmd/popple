@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useRef } from 'react'
 import Image from 'next/image'
+import { EventImage } from './event-image'
 import {
   ChevronLeft,
   Share2,
@@ -333,25 +334,13 @@ export function EventDetail({ event, onBack }: EventDetailProps) {
       <div className="flex-1 pb-32">
         {/* 1번 상단: 대표 포스터 이미지 */}
         <div className="relative w-full aspect-[4/3] bg-slate-100 overflow-hidden">
-          {imageFailed || !imageSrc ? (
-            <div className="flex h-full w-full flex-col items-center justify-center gap-2 bg-gradient-to-br from-slate-100 to-slate-200 text-slate-400">
-              <div className="size-12 rounded-full bg-slate-200/80 flex items-center justify-center text-slate-400">
-                <ImageIcon className="size-6 stroke-[1.8] text-slate-400" />
-              </div>
-              <span className="text-xs font-bold text-slate-400">포스터 준비중</span>
-            </div>
-          ) : (
-            <Image
-              src={imageSrc}
-              alt={`${event.title} 대표 이미지`}
-              fill
-              unoptimized
-              referrerPolicy="no-referrer"
-              onError={() => setImageFailed(true)}
-              className="object-cover object-center"
-              priority
-            />
-          )}
+          <EventImage
+            src={imageSrc}
+            alt={`${event.title} 대표 이미지`}
+            fill
+            className="object-cover object-center"
+            priority
+          />
 
           {/* 좌측 하단 카테고리 칩 (팝업/축제 등) */}
           <div className="absolute bottom-3 left-4 z-10">

@@ -1,4 +1,4 @@
-import type { PoppleEvent } from './events'
+import { type PoppleEvent, sortEventsVisualFirst } from './events'
 import { supabase } from './supabaseClient'
 
 export interface ClickLogEntry {
@@ -384,11 +384,15 @@ export async function fetchWeeklyTopFestivals(
         }
       } else if (item.record) {
         const cachedPoster = getCachedPoster(item.id, dbTitle)
-        const realPoster =
+        const rawPoster =
           cachedPoster ||
           (item.record.imageUrl as string) ||
           (item.record.poster as string) ||
-          '/events/rock-festival.png'
+          ''
+        const realPoster =
+          rawPoster && !rawPoster.includes('rock-festival') && !rawPoster.includes('jazz-picnic')
+            ? rawPoster
+            : ''
 
         const fallbackEvent: PoppleEvent = {
           id: String(item.id),
@@ -428,7 +432,7 @@ export async function fetchWeeklyTopFestivals(
       }
     }
 
-    return result.slice(0, limit)
+    return sortEventsVisualFirst(result).slice(0, limit)
   } catch (err) {
     console.warn('[ranking] fetchWeeklyTopFestivals error:', err)
     return computeWeeklyRanking(candidatePool, limit)
@@ -544,11 +548,15 @@ export async function fetchDailyLiveFestivals(
         }
       } else if (item.record) {
         const cachedPoster = getCachedPoster(item.id, dbTitle)
-        const realPoster =
+        const rawPoster =
           cachedPoster ||
           (item.record.imageUrl as string) ||
           (item.record.poster as string) ||
-          '/events/jazz-picnic.png'
+          ''
+        const realPoster =
+          rawPoster && !rawPoster.includes('jazz-picnic') && !rawPoster.includes('rock-festival')
+            ? rawPoster
+            : ''
 
         const fallbackEvent: PoppleEvent = {
           id: String(item.id),
@@ -588,7 +596,7 @@ export async function fetchDailyLiveFestivals(
       }
     }
 
-    return result.slice(0, limit)
+    return sortEventsVisualFirst(result).slice(0, limit)
   } catch (err) {
     console.warn('[ranking] fetchDailyLiveFestivals error:', err)
     return computeLiveNowRanking(candidatePool, limit)
@@ -663,7 +671,7 @@ export function computeWeeklyRanking(
     }
   }
 
-  return result.slice(0, limit)
+  return sortEventsVisualFirst(result).slice(0, limit)
 }
 
 /**
@@ -733,6 +741,6 @@ export function computeLiveNowRanking(
     }
   }
 
-  return result.slice(0, limit)
+  return sortEventsVisualFirst(result).slice(0, limit)
 }
 

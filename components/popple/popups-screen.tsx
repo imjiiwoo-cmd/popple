@@ -20,6 +20,7 @@ import {
   ImageIcon,
 } from 'lucide-react'
 import { type PoppleEvent, sortPopupsVisualFirst } from '@/lib/events'
+import { EventImage } from './event-image'
 
 interface PopupsScreenProps {
   onBack: () => void
@@ -274,29 +275,13 @@ export function PopupsScreen({
                         팝업
                       </span>
 
-                      {ev.imageUrl && ev.imageUrl.trim() && !imageFailedMap[ev.id] && ev.imageUrl !== '/events/media-art.png' ? (
-                        <Image
-                          src={ev.imageUrl}
-                          alt={ev.title}
-                          fill
-                          sizes="112px"
-                          unoptimized
-                          referrerPolicy="no-referrer"
-                          onError={() => {
-                            setImageFailedMap((prev) => ({ ...prev, [ev.id]: true }))
-                          }}
-                          className="object-cover transition-transform duration-300 group-hover:scale-105"
-                        />
-                      ) : (
-                        <div className="w-full h-full flex flex-col items-center justify-center gap-2 bg-slate-100/90 p-2 text-center select-none">
-                          <div className="size-10 rounded-full bg-slate-200/70 flex items-center justify-center text-slate-400">
-                            <ImageIcon className="size-5 stroke-[1.8] text-slate-400" />
-                          </div>
-                          <span className="text-[11px] font-bold text-slate-400 tracking-tight leading-tight">
-                            포스터 준비중
-                          </span>
-                        </div>
-                      )}
+                      <EventImage
+                        src={ev.imageUrl || ev.poster}
+                        alt={ev.title}
+                        fill
+                        sizes="112px"
+                        className="object-cover transition-transform duration-300 group-hover:scale-105"
+                      />
                     </div>
 
                     {/* 우측: 행사명, 기간, 입장료, 장소 텍스트 및 액션 버튼 */}

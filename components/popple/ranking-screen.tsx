@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Image from 'next/image'
+import { EventImage } from './event-image'
 import {
   ArrowLeft,
   Flame,
@@ -235,11 +236,10 @@ export function RankingScreen() {
                 >
                   {/* 좌측 썸네일 & 순위 배지 */}
                   <div className="relative size-24 shrink-0 rounded-xl overflow-hidden bg-slate-100">
-                    <Image
-                      src={ev.imageUrl || ev.poster || '/events/rock-festival.png'}
+                    <EventImage
+                      src={ev.imageUrl || ev.poster}
                       alt={ev.title}
                       fill
-                      unoptimized
                       className="object-cover transition-transform duration-300 group-hover:scale-105"
                     />
 

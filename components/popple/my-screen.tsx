@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react'
 import Image from 'next/image'
+import { EventImage } from './event-image'
 import {
   Camera,
   Edit3,
@@ -628,11 +629,10 @@ export function MyScreen({
                   className="shrink-0 w-38 rounded-2xl border border-slate-200/80 bg-white overflow-hidden shadow-xs cursor-pointer active:scale-[0.98] transition-transform flex flex-col"
                 >
                   <div className="relative aspect-[3/4] w-full bg-slate-100">
-                    <Image
-                      src={ev.imageUrl || ev.poster || '/events/rock-festival.png'}
+                    <EventImage
+                      src={ev.imageUrl || ev.poster}
                       alt={ev.title}
                       fill
-                      unoptimized
                       className="object-cover"
                     />
                     <span className="absolute top-2 left-2 z-10 rounded-md bg-[#1884F7] px-1.5 py-0.5 text-[9px] font-bold text-white shadow-xs">

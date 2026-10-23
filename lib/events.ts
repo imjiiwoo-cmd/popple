@@ -141,6 +141,8 @@ export function sortPopupsVisualFirst<T extends PoppleEvent>(
       a.imageUrl.trim() !== '' &&
       !failedMap[a.id] &&
       !a.imageUrl.includes('blank.gif') &&
+      !a.imageUrl.includes('jazz-picnic') &&
+      !a.imageUrl.includes('rock-festival') &&
       a.imageUrl !== '/events/media-art.png'
     )
     const hasImgB = Boolean(
@@ -148,6 +150,8 @@ export function sortPopupsVisualFirst<T extends PoppleEvent>(
       b.imageUrl.trim() !== '' &&
       !failedMap[b.id] &&
       !b.imageUrl.includes('blank.gif') &&
+      !b.imageUrl.includes('jazz-picnic') &&
+      !b.imageUrl.includes('rock-festival') &&
       b.imageUrl !== '/events/media-art.png'
     )
 
@@ -162,3 +166,37 @@ export function sortPopupsVisualFirst<T extends PoppleEvent>(
     return scoreA - scoreB
   })
 }
+
+/**
+ * 유효한 실제 포스터 이미지인지 판정 (가짜 일러스트 배제)
+ */
+export function hasValidPosterImage(imageUrl?: string | null): boolean {
+  if (!imageUrl || typeof imageUrl !== 'string') return false
+  const trimmed = imageUrl.trim()
+  if (!trimmed) return false
+  if (
+    trimmed.includes('blank.gif') ||
+    trimmed.includes('jazz-picnic') ||
+    trimmed.includes('rock-festival') ||
+    trimmed.includes('media-art.png') ||
+    trimmed.includes('placeholder-image')
+  ) {
+    return false
+  }
+  return true
+}
+
+/**
+ * 축제 및 일반 행사 대상 시각적 우선 정렬 (Visual-first sorting)
+ * 1순위: 유효한 실제 포스터/사진이 있는 행사 상단 배치
+ * 2순위: 조회수(viewCount) 높은 순 유지
+ */
+export function sortEventsVisualFirst<T extends PoppleEvent>(items: T[]): T[] {
+  return [...items].sort((a, b) => {
+    const hasA = hasValidPosterImage(a.imageUrl || a.poster) ? 1 : 0
+    const hasB = hasValidPosterImage(b.imageUrl || b.poster) ? 1 : 0
+    if (hasA !== hasB) return hasB - hasA
+    return (b.viewCount || 0) - (a.viewCount || 0)
+  })
+}
+
