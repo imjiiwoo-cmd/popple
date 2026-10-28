@@ -1,5 +1,5 @@
 import { GoogleGenAI } from '@google/genai'
-import { type PoppleEvent, sortPopupsVisualFirst } from '@/lib/events'
+import { type PoppleEvent, sortPopupsVisualFirst, isEventOperatingInRange } from '@/lib/events'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 3600 // 1시간 캐싱 적용
@@ -813,8 +813,15 @@ export async function getCuratedPopups(regionParam?: string): Promise<PopupItem[
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url)
   const regionParam = (searchParams.get('region') || searchParams.get('category') || '').trim()
+  const startParam = (searchParams.get('startDate') || '').replace(/\D/g, '')
+  const endParam = (searchParams.get('endDate') || '').replace(/\D/g, '')
 
-  const filtered = await getCuratedPopups(regionParam)
+  let filtered = await getCuratedPopups(regionParam)
+
+  // 주간 날짜 범위 파라미터(startDate, endDate) 필터링: 주간에 운영 중인 팝업만 반환
+  if (startParam && endParam) {
+    filtered = filtered.filter((p) => isEventOperatingInRange(p, startParam, endParam))
+  }
 
   return Response.json({
     popups: filtered,

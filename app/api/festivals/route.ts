@@ -82,12 +82,14 @@ function getTodayDateString(): string {
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url)
   const todayStr = getTodayDateString()
+  const startParam = (searchParams.get('startDate') || '').replace(/\D/g, '')
+  const endParam = (searchParams.get('endDate') || '').replace(/\D/g, '')
 
   const DEFAULT_TOUR_API_KEY = 'ae2f8c36f6339b67ba8401daf1f1416801cfead2a6fe3b02f72775f7bb7df8d3'
   const tourApiKey = process.env.TOUR_API_KEY || DEFAULT_TOUR_API_KEY
   const festivals: CalendarFestival[] = []
 
-  // 1. TourAPI searchFestival2 호출 (오늘 날짜 eventStartDate 전달)
+  // 1. TourAPI searchFestival2 호출 (주간 시작일 또는 오늘 날짜 eventStartDate 전달)
   if (tourApiKey && tourApiKey !== 'your_tour_api_key_here') {
     try {
       const decodedKey = decodeURIComponent(tourApiKey.trim())
@@ -96,9 +98,14 @@ export async function GET(request: Request) {
       url.searchParams.set('MobileOS', 'ETC')
       url.searchParams.set('MobileApp', 'Popple')
       url.searchParams.set('_type', 'json')
-      url.searchParams.set('eventStartDate', todayStr) // ★ 1. 오늘 날짜 기준 전달
+      
+      const tourStartDate =
+        startParam && startParam < todayStr
+          ? `${startParam.slice(0, 6)}01`
+          : startParam || todayStr
+      url.searchParams.set('eventStartDate', tourStartDate)
       url.searchParams.set('arrange', 'A')
-      url.searchParams.set('numOfRows', '300') // 전체 축제 풀 확보 (이천펫축제, 문화가 있는 날 등 포함)
+      url.searchParams.set('numOfRows', '300') // 전체 축제 풀 확보
 
       const res = await fetch(url.toString(), {
         signal: AbortSignal.timeout(6000),
@@ -108,6 +115,8 @@ export async function GET(request: Request) {
         const data = await res.json()
         const rawItems: TourFestivalItem[] = data.response?.body?.items?.item || []
         const items = Array.isArray(rawItems) ? rawItems : []
+
+        const minValidDate = startParam || todayStr
 
         for (const [idx, item] of items.entries()) {
           const rawImage = (item.firstimage || item.firstimage2 || '').trim()
@@ -122,10 +131,9 @@ export async function GET(request: Request) {
 
           if (!start) continue
 
-          // ★ [2. 오늘 날짜 기준 실시간 종료일 필터링]
-          // eventenddate < 오늘 날짜: 이미 종료된 행사는 결과 목록에서 완전히 제외
-          if (end && end < todayStr) continue
-          if (!end && start && start < todayStr) continue
+          // 주간 시작일(또는 오늘) 기준 이미 종료된 행사는 결과 목록에서 제외
+          if (end && end < minValidDate) continue
+          if (!end && start && start < minValidDate) continue
 
           festivals.push({
             id: `tour_fest_${item.contentid || idx}`,
@@ -272,6 +280,17 @@ export async function GET(request: Request) {
     console.warn('[popple-festivals] Failed to load view counts from Supabase:', err)
   }
 
+  // 주간 날짜 범위 파라미터(startDate, endDate) 필터링: 주간에 운영 중인 축제만 반환
+  let resultFestivals = festivals
+  if (startParam && endParam) {
+    resultFestivals = festivals.filter((f) => {
+      const s = f.startDate || ''
+      const e = f.endDate || f.startDate || ''
+      if (!s) return true
+      return s <= endParam && e >= startParam
+    })
+  }
+
   // 실제 TourAPI 데이터 및 실시간 전역 조회수 반환
-  return Response.json({ festivals })
+  return Response.json({ festivals: resultFestivals })
 }

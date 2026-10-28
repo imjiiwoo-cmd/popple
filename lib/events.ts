@@ -200,3 +200,69 @@ export function sortEventsVisualFirst<T extends PoppleEvent>(items: T[]): T[] {
   })
 }
 
+/**
+ * 행사 날짜 범위 파싱 유틸리티 (YYYYMMDD 형식의 startDate, endDate 반환)
+ */
+export function parseEventDateRange(
+  dateStr?: string,
+  startStr?: string,
+  endStr?: string,
+): { startDate: string; endDate: string } {
+  if (startStr && startStr.length === 8 && endStr && endStr.length === 8) {
+    return { startDate: startStr, endDate: endStr }
+  }
+  if (!dateStr) {
+    return { startDate: '20261001', endDate: '20261031' }
+  }
+  const numbers = dateStr.match(/\d+/g) || []
+  const n0 = numbers[0] || ''
+  const n1 = numbers[1] || ''
+  const n2 = numbers[2] || ''
+  const n3 = numbers[3] || ''
+  const n4 = numbers[4] || ''
+
+  if (numbers.length >= 5 && n0.length === 4) {
+    const yyyy = n0
+    const mm1 = n1.padStart(2, '0')
+    const dd1 = n2.padStart(2, '0')
+    const mm2 = n3.padStart(2, '0')
+    const dd2 = n4.padStart(2, '0')
+    return {
+      startDate: `${yyyy}${mm1}${dd1}`,
+      endDate: `${yyyy}${mm2}${dd2}`,
+    }
+  } else if (numbers.length >= 4 && n0.length <= 2) {
+    const yyyy = '2026'
+    const mm1 = n0.padStart(2, '0')
+    const dd1 = n1.padStart(2, '0')
+    const mm2 = n2.padStart(2, '0')
+    const dd2 = n3.padStart(2, '0')
+    return {
+      startDate: `${yyyy}${mm1}${dd1}`,
+      endDate: `${yyyy}${mm2}${dd2}`,
+    }
+  } else if (numbers.length >= 3 && n0.length === 4) {
+    const yyyy = n0
+    const mm1 = n1.padStart(2, '0')
+    const dd1 = n2.padStart(2, '0')
+    return {
+      startDate: `${yyyy}${mm1}${dd1}`,
+      endDate: `${yyyy}${mm1}${dd1}`,
+    }
+  }
+  return { startDate: '20261001', endDate: '20261031' }
+}
+
+/**
+ * 특정 날짜 범위([rangeStart, rangeEnd])에 행사가 운영되는지 판정
+ * YYYYMMDD 기준: event.startDate <= rangeEnd && event.endDate >= rangeStart
+ */
+export function isEventOperatingInRange(
+  event: { date?: string; startDate?: string; endDate?: string },
+  rangeStart: string,
+  rangeEnd: string,
+): boolean {
+  const range = parseEventDateRange(event.date, event.startDate, event.endDate)
+  return range.startDate <= rangeEnd && range.endDate >= rangeStart
+}
+

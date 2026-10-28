@@ -16,7 +16,7 @@ import {
   Check,
   ImageIcon,
 } from 'lucide-react'
-import { type PoppleEvent, sortPopupsVisualFirst } from '@/lib/events'
+import { type PoppleEvent, sortPopupsVisualFirst, parseEventDateRange } from '@/lib/events'
 import type { CalendarFestival } from '@/app/api/festivals/route'
 import { cn } from '@/lib/utils'
 import { EventImage } from './event-image'
@@ -114,56 +114,43 @@ function getWeekOfMonthText(monday: Date): string {
 }
 
 /**
- * 행사 날짜 범위 파싱 유틸리티 (YYYYMMDD 형식의 startDate, endDate 반환)
+ * 주간 시작일(월요일)로부터 주간 범위(월~일 YYYYMMDD) 및 캐시 키 생성
  */
-function parseEventDateRange(
-  dateStr?: string,
-  startStr?: string,
-  endStr?: string,
-): { startDate: string; endDate: string } {
-  if (startStr && startStr.length === 8 && endStr && endStr.length === 8) {
-    return { startDate: startStr, endDate: endStr }
+function getWeekRangeStrings(monday: Date): { startDate: string; endDate: string; key: string } {
+  const sunday = new Date(monday)
+  sunday.setDate(sunday.getDate() + 6)
+  const startDate = toDateString(monday)
+  const endDate = toDateString(sunday)
+  return {
+    startDate,
+    endDate,
+    key: `${startDate}_${endDate}`,
   }
-  if (!dateStr) {
-    return { startDate: '20261001', endDate: '20261031' }
-  }
-  const numbers = dateStr.match(/\d+/g) || []
-  const n0 = numbers[0] || ''
-  const n1 = numbers[1] || ''
-  const n2 = numbers[2] || ''
-  const n3 = numbers[3] || ''
-  const n4 = numbers[4] || ''
+}
 
-  if (numbers.length >= 5 && n0.length === 4) {
-    const yyyy = n0
-    const mm1 = n1.padStart(2, '0')
-    const dd1 = n2.padStart(2, '0')
-    const mm2 = n3.padStart(2, '0')
-    const dd2 = n4.padStart(2, '0')
-    return {
-      startDate: `${yyyy}${mm1}${dd1}`,
-      endDate: `${yyyy}${mm2}${dd2}`,
-    }
-  } else if (numbers.length >= 4 && n0.length <= 2) {
-    const yyyy = '2026'
-    const mm1 = n0.padStart(2, '0')
-    const dd1 = n1.padStart(2, '0')
-    const mm2 = n2.padStart(2, '0')
-    const dd2 = n3.padStart(2, '0')
-    return {
-      startDate: `${yyyy}${mm1}${dd1}`,
-      endDate: `${yyyy}${mm2}${dd2}`,
-    }
-  } else if (numbers.length >= 3 && n0.length === 4) {
-    const yyyy = n0
-    const mm1 = n1.padStart(2, '0')
-    const dd1 = n2.padStart(2, '0')
-    return {
-      startDate: `${yyyy}${mm1}${dd1}`,
-      endDate: `${yyyy}${mm1}${dd1}`,
-    }
-  }
-  return { startDate: '20261001', endDate: '20261031' }
+/**
+ * 데이터 로딩 중 부드럽게 깜빡이는 행사 카드 스켈레톤 플레이스홀더
+ */
+function EventCardSkeleton() {
+  return (
+    <div className="bg-white rounded-3xl p-3 border border-slate-100 shadow-[0_4px_16px_rgba(0,0,0,0.03)] flex gap-3.5 animate-pulse">
+      {/* 좌측 썸네일 스켈레톤 */}
+      <div className="w-[112px] min-w-[112px] h-[190px] rounded-2xl bg-slate-200/70 shrink-0" />
+      {/* 우측 텍스트 상세 스켈레톤 */}
+      <div className="flex flex-col justify-between flex-1 py-1 min-w-0">
+        <div className="space-y-2.5">
+          <div className="h-5 bg-slate-200/80 rounded-md w-3/4" />
+          <div className="h-4 bg-slate-200/60 rounded-md w-1/2" />
+          <div className="space-y-2 pt-2">
+            <div className="h-3.5 bg-slate-200/50 rounded w-2/3" />
+            <div className="h-3.5 bg-slate-200/50 rounded w-1/2" />
+            <div className="h-3.5 bg-slate-200/50 rounded w-4/5" />
+          </div>
+        </div>
+        <div className="h-9 bg-slate-100 rounded-xl w-full mt-3" />
+      </div>
+    </div>
+  )
 }
 
 /**
@@ -243,11 +230,15 @@ export function EventsCalendarScreen({
   // 3. 북마크 상태 캐시
   const [bookmarkedMap, setBookmarkedMap] = useState<Record<string, boolean>>({})
 
-  // 4. 축제 및 팝업스토어 목록 데이터
+  // 4. 축제 및 팝업스토어 목록 데이터 및 주간 캐시
   const [festivals, setFestivals] = useState<CalendarFestival[]>([])
   const [popups, setPopups] = useState<PoppleEvent[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [popupImageFailedMap, setPopupImageFailedMap] = useState<Record<string, boolean>>({})
+
+  // 주간 단위 인메모리 캐시 (key: 'YYYYMMDD_YYYYMMDD' -> { festivals, popups })
+  const weekCacheRef = useRef<Map<string, { festivals: CalendarFestival[]; popups: PoppleEvent[] }>>(new Map())
+  const activeAbortRef = useRef<AbortController | null>(null)
 
   // 5. 플로팅 최상단 스크롤 버튼 표시 상태
   const [showScrollTop, setShowScrollTop] = useState(false)
@@ -283,36 +274,98 @@ export function EventsCalendarScreen({
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
 
-  // 축제 및 팝업스토어 데이터 불러오기
-  useEffect(() => {
-    let isMounted = true
-    setIsLoading(true)
+  // 주간 데이터 비동기 요청 함수 (캐시 우선 확인)
+  const fetchWeekData = async (
+    monday: Date,
+    signal?: AbortSignal,
+  ): Promise<{ festivals: CalendarFestival[]; popups: PoppleEvent[] }> => {
+    const { startDate, endDate, key } = getWeekRangeStrings(monday)
+    const cached = weekCacheRef.current.get(key)
+    if (cached) {
+      return cached
+    }
 
-    Promise.all([
-      fetch('/api/festivals')
+    const [festData, popData] = await Promise.all([
+      fetch(`/api/festivals?startDate=${startDate}&endDate=${endDate}`, { signal })
         .then((res) => res.json())
         .catch(() => ({ festivals: [] })),
-      fetch('/api/popups')
+      fetch(`/api/popups?startDate=${startDate}&endDate=${endDate}`, { signal })
         .then((res) => res.json())
         .catch(() => ({ popups: [] })),
     ])
-      .then(([festData, popData]) => {
-        if (isMounted) {
-          setFestivals(festData.festivals || [])
-          setPopups(popData.popups || [])
-        }
-      })
-      .catch((err) => {
-        console.warn('Failed to load festivals/popups for calendar:', err)
-      })
-      .finally(() => {
-        if (isMounted) setIsLoading(false)
-      })
+
+    const result = {
+      festivals: (festData.festivals || []) as CalendarFestival[],
+      popups: (popData.popups || []) as PoppleEvent[],
+    }
+
+    weekCacheRef.current.set(key, result)
+    return result
+  }
+
+  // 주간 단위 점진적 로딩 (Weekly Lazy Fetching) & 프리페칭 (Prefetching)
+  useEffect(() => {
+    let isMounted = true
+
+    // 이전 주차 요청 취소
+    if (activeAbortRef.current) {
+      activeAbortRef.current.abort()
+    }
+    const controller = new AbortController()
+    activeAbortRef.current = controller
+
+    const { key } = getWeekRangeStrings(currentMonday)
+    const cached = weekCacheRef.current.get(key)
+
+    if (cached) {
+      // 1순위: 캐시가 이미 존재하면 즉각 렌더링 (0ms 무지연)
+      setFestivals(cached.festivals)
+      setPopups(cached.popups)
+      setIsLoading(false)
+    } else {
+      // 2순위: 캐시가 없으면 스켈레톤 로딩 상태 노출 후 해당 주간 데이터만 경량 패치
+      setIsLoading(true)
+      fetchWeekData(currentMonday, controller.signal)
+        .then((data) => {
+          if (isMounted) {
+            setFestivals(data.festivals)
+            setPopups(data.popups)
+            setIsLoading(false)
+          }
+        })
+        .catch((err) => {
+          if (err.name !== 'AbortError' && isMounted) {
+            setIsLoading(false)
+          }
+        })
+    }
+
+    // 앞뒤 1주차 데이터 백그라운드 프리페치 (Prefetching)
+    const prefetchTimer = setTimeout(() => {
+      if (!isMounted) return
+
+      const prevMonday = new Date(currentMonday)
+      prevMonday.setDate(prevMonday.getDate() - 7)
+      const nextMonday = new Date(currentMonday)
+      nextMonday.setDate(nextMonday.getDate() + 7)
+
+      const prevKey = getWeekRangeStrings(prevMonday).key
+      const nextKey = getWeekRangeStrings(nextMonday).key
+
+      if (!weekCacheRef.current.has(nextKey)) {
+        fetchWeekData(nextMonday).catch(() => {})
+      }
+      if (!weekCacheRef.current.has(prevKey)) {
+        fetchWeekData(prevMonday).catch(() => {})
+      }
+    }, 250)
 
     return () => {
       isMounted = false
+      clearTimeout(prefetchTimer)
+      controller.abort()
     }
-  }, [])
+  }, [currentMonday])
 
   // 로컬스토리지에서 북마크 불러오기
   useEffect(() => {
@@ -831,8 +884,21 @@ export function EventsCalendarScreen({
             </div>
           </div>
 
-          {/* [3. 행사 필터: '팝업스토어' 선택 시 실시간 팝업스토어 리스트 렌더링] */}
-          {selectedEventType === '팝업스토어' ? (
+          {/* [행사 리스트 렌더링: 로딩 중 스켈레톤 노출 / 팝업스토어 / 날짜별 축제 목록] */}
+          {isLoading ? (
+            /* 스켈레톤 UI: 주간 데이터 로딩 시 깜빡이는 플레이스홀더 노출 */
+            <div className="flex flex-col gap-3.5">
+              <div className="flex items-center gap-2 mb-0.5 px-1">
+                <span className="size-2 rounded-full bg-[#1884F7] animate-ping inline-block" />
+                <span className="text-xs font-bold text-slate-400">
+                  {selectedEventType === '팝업스토어' ? '팝업스토어' : '주간 행사'} 일정을 불러오는 중입니다...
+                </span>
+              </div>
+              <EventCardSkeleton />
+              <EventCardSkeleton />
+              <EventCardSkeleton />
+            </div>
+          ) : selectedEventType === '팝업스토어' ? (
             filteredPopups.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-16 px-4 bg-white rounded-3xl border border-slate-100 text-center gap-2.5 shadow-xs">
                 <div className="size-12 rounded-full bg-slate-100 flex items-center justify-center text-slate-400">
@@ -941,11 +1007,6 @@ export function EventsCalendarScreen({
                 })}
               </div>
             )
-          ) : isLoading ? (
-            <div className="flex flex-col items-center justify-center py-20 gap-3 text-slate-400">
-              <div className="size-8 rounded-full border-3 border-sky-400 border-t-transparent animate-spin" />
-              <p className="text-xs font-medium">축제 일정을 불러오는 중입니다...</p>
-            </div>
           ) : visibleGroups.every((g) => g.events.length === 0) ? (
             /* 행사가 없는 경우 */
             <div className="flex flex-col items-center justify-center py-16 px-4 bg-white rounded-3xl border border-slate-100 text-center gap-2.5 shadow-xs">
