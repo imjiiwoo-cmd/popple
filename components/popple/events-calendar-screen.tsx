@@ -22,6 +22,7 @@ import {
   parseEventDateRange,
   isEventActiveOnDate,
   isEventOperatingInRange,
+  isEventOpeningOrClosingOnDate,
 } from '@/lib/events'
 import { PRESET_FESTIVALS, PRESET_POPUPS } from '@/lib/constants/events'
 import type { CalendarFestival } from '@/app/api/festivals/route'
@@ -523,7 +524,45 @@ export function EventsCalendarScreen({
     })
   }
 
-  // 특정 날짜에 현재 선택된 필터(지역/행사종류)가 적용된 진행 중 축제 데이터 여부 판정 (인디케이터 점/건수)
+  // 신규 오픈(startDate == 날짜) 또는 종료(endDate == 날짜) 지역축제 목록 (인디케이터 점 기준)
+  const getOpenCloseFestivalsOnDate = (dateObj: Date): CalendarFestival[] => {
+    if (selectedEventType === '팝업스토어') {
+      return []
+    }
+
+    return festivals.filter((f) => {
+      if (!matchesRegion(f.location || '', f.title || '', selectedRegion)) {
+        return false
+      }
+
+      if (selectedEventType === '지역축제') {
+        const isPopup =
+          f.category?.includes('팝업') ||
+          f.tags?.some((t) => t.includes('팝업')) ||
+          f.title?.includes('팝업')
+        if (isPopup) return false
+      }
+
+      return isEventOpeningOrClosingOnDate(f, dateObj)
+    })
+  }
+
+  // 신규 오픈(startDate == 날짜) 또는 종료(endDate == 날짜) 팝업스토어 목록 (인디케이터 점 기준)
+  const getOpenClosePopupsOnDate = (dateObj: Date): PoppleEvent[] => {
+    if (selectedEventType === '지역축제') {
+      return []
+    }
+
+    return popups.filter((p) => {
+      if (!matchesRegion(p.location || '', p.title || '', selectedRegion)) {
+        return false
+      }
+
+      return isEventOpeningOrClosingOnDate(p, dateObj)
+    })
+  }
+
+  // 특정 날짜에 현재 선택된 필터(지역/행사종류)가 적용된 진행 중 축제 데이터 여부 판정
   const hasFestivalOnDate = (dateObj: Date): boolean => {
     return getFilteredFestivalsOnDate(dateObj).length > 0 || getFilteredPopupsOnDate(dateObj).length > 0
   }
@@ -683,15 +722,15 @@ export function EventsCalendarScreen({
               {getWeekOfMonthText(currentMonday)}
             </span>
 
-            {/* 축제 및 팝업 데이터 범례 */}
+            {/* 축제 및 팝업 오픈/마감 범례 */}
             <div className="flex items-center gap-2.5 text-xs font-bold text-slate-500">
               <div className="flex items-center gap-1">
                 <span className="size-2 rounded-full bg-rose-500 inline-block" />
-                <span>지역축제</span>
+                <span>오픈/마감 축제</span>
               </div>
               <div className="flex items-center gap-1">
-                <span className="size-2 rounded-full bg-[#1884F7] inline-block" />
-                <span>팝업스토어</span>
+                <span className="size-2 rounded-full bg-blue-500 inline-block" />
+                <span>오픈/마감 팝업</span>
               </div>
             </div>
           </div>
@@ -712,10 +751,10 @@ export function EventsCalendarScreen({
             <div className="flex-1 flex items-center justify-between gap-0.5 sm:gap-1 min-w-0">
               {weekDays.map((dateObj, idx) => {
                 const isSelected = isSameDate(dateObj, selectedDate)
-                const festEvents = getFilteredFestivalsOnDate(dateObj)
-                const popupEvents = getFilteredPopupsOnDate(dateObj)
-                const festCount = festEvents.length
-                const popupCount = popupEvents.length
+                const openCloseFests = getOpenCloseFestivalsOnDate(dateObj)
+                const openClosePopups = getOpenClosePopupsOnDate(dateObj)
+                const festCount = openCloseFests.length
+                const popupCount = openClosePopups.length
                 const totalCount = festCount + popupCount
                 const dayLabel = DAY_LABELS[idx] // 월 ~ 일
 
@@ -751,14 +790,14 @@ export function EventsCalendarScreen({
                       {dateObj.getDate()}
                     </span>
 
-                    {/* 행사 데이터 연동 및 건수 뱃지 (0건인 경우 점과 숫자 미노출) */}
+                    {/* 신규 오픈/종료 행사 기준 점 인디케이터 (상시 평일은 완전 미노출) */}
                     <div className="h-4 flex items-center justify-center">
                       {totalCount > 0 ? (
                         <div className="flex items-center justify-center gap-1 leading-none">
                           {festCount > 0 && (
                             <span
                               className="inline-flex items-center gap-0.5"
-                              title={`지역축제 ${festCount}건`}
+                              title={`오픈/마감 축제 ${festCount}건`}
                             >
                               <span
                                 className={cn(
@@ -779,12 +818,12 @@ export function EventsCalendarScreen({
                           {popupCount > 0 && (
                             <span
                               className="inline-flex items-center gap-0.5"
-                              title={`팝업스토어 ${popupCount}건`}
+                              title={`오픈/마감 팝업 ${popupCount}건`}
                             >
                               <span
                                 className={cn(
                                   'size-1.5 rounded-full shrink-0',
-                                  isSelected ? 'bg-white' : 'bg-[#1884F7]',
+                                  isSelected ? 'bg-white' : 'bg-blue-500',
                                 )}
                               />
                               <span

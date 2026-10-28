@@ -405,3 +405,17 @@ export function isEventActiveOnDate(
   return start <= targetYMD && targetYMD <= end
 }
 
+/**
+ * 특정 날짜(targetDate)에 행사가 새로 오픈(startDate == targetDate)하거나 종료(endDate == targetDate)하는지 판정
+ */
+export function isEventOpeningOrClosingOnDate(
+  event: { date?: string; startDate?: string; endDate?: string },
+  targetDate: string | Date,
+): boolean {
+  const targetYMD = normalizeDateToYMD(targetDate)
+  if (targetYMD.length !== 8) return false
+
+  const range = parseEventDateRange(event.date, event.startDate, event.endDate)
+  return range.startDate === targetYMD || range.endDate === targetYMD
+}
+
