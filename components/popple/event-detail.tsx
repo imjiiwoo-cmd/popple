@@ -145,6 +145,19 @@ export function EventDetail({ event, onBack }: EventDetailProps) {
     setPendingCouponSpot(null)
   }
 
+  // '아직 도착 전이에요 (현장 대기 집계 없이 쿠폰 받기)' 예외 핸들러
+  const handleSkipWaitingCheckIn = () => {
+    showToast('쿠폰이 발급되었습니다!')
+    setIsWaitingModalOpen(false)
+
+    // 대기 상태는 기존 상태를 유지하고, 바로 쿠폰 모달로 이동
+    const targetSpot = pendingCouponSpot || nearbySpots[0]
+    if (targetSpot) {
+      setSelectedCouponSpot(targetSpot)
+    }
+    setPendingCouponSpot(null)
+  }
+
   // 상단 미니 별점 요약 및 부드러운 스크롤 타겟
   const reviewsSectionRef = useRef<HTMLDivElement>(null)
   const scrollToReviews = () => {
@@ -1081,7 +1094,16 @@ export function EventDetail({ event, onBack }: EventDetailProps) {
               </button>
             </div>
 
-            <p className="mt-4 text-[11px] text-slate-400 font-medium">
+            {/* 허위 데이터 방지를 위한 '미도착' 예외 옵션 버튼 */}
+            <button
+              type="button"
+              onClick={handleSkipWaitingCheckIn}
+              className="mt-3.5 py-1.5 px-3 text-xs font-semibold text-slate-500 hover:text-slate-800 hover:underline transition-colors cursor-pointer flex items-center justify-center gap-1 active:scale-95"
+            >
+              <span>아직 도착 전이에요 (현장 대기 집계 없이 쿠폰 받기)</span>
+            </button>
+
+            <p className="mt-2 text-[11px] text-slate-400 font-medium">
               💡 상태를 1회 탭하면 즉시 가상 바코드 쿠폰이 발급됩니다.
             </p>
           </div>
