@@ -78,6 +78,7 @@ export interface EventImageProps {
   sizes?: string
   priority?: boolean
   unoptimized?: boolean
+  referrerPolicy?: React.HTMLAttributeReferrerPolicy
 }
 
 /**
@@ -97,6 +98,7 @@ export function EventImage({
   sizes,
   priority,
   unoptimized = true,
+  referrerPolicy = 'no-referrer',
 }: EventImageProps) {
   const [hasError, setHasError] = useState(false)
   const isInvalid = isInvalidImageUrl(src)
@@ -121,7 +123,7 @@ export function EventImage({
       sizes={sizes}
       priority={priority}
       unoptimized={unoptimized}
-      referrerPolicy="no-referrer"
+      referrerPolicy={referrerPolicy}
       onError={() => setHasError(true)}
       className={className}
     />

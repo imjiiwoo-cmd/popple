@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useRef } from 'react'
+import { useEffect, useState, useRef, useMemo } from 'react'
 import Image from 'next/image'
 import { EventImage } from './event-image'
 import {
@@ -20,6 +20,9 @@ import {
   Camera,
   X,
   ImageIcon,
+  UtensilsCrossed,
+  Tag,
+  Ticket,
 } from 'lucide-react'
 import type { PoppleEvent } from '@/lib/events'
 import { getUserProfile } from '@/lib/mypage'
@@ -31,6 +34,7 @@ import {
   type CommunityPost,
 } from '@/lib/community'
 import { recordEventClick } from '@/lib/ranking'
+import { getNearbySpotsForEvent, type NearbySpot } from '@/lib/constants/nearby-spots'
 
 interface EventDetailProps {
   event: PoppleEvent
@@ -87,6 +91,54 @@ export function EventDetail({ event, onBack }: EventDetailProps) {
   const [newRating, setNewRating] = useState(5)
   const [hoverRating, setHoverRating] = useState<number | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
+
+  // 인근 추천 핫플 (식당 1곳 + 카페 1곳) 및 가상 쿠폰 상태
+  const [selectedCouponSpot, setSelectedCouponSpot] = useState<NearbySpot | null>(null)
+  const [usedCouponCodes, setUsedCouponCodes] = useState<Record<string, boolean>>({})
+
+  const nearbySpots = useMemo(
+    () => getNearbySpotsForEvent(event.location, event.title),
+    [event.location, event.title],
+  )
+
+  // 상단 미니 별점 요약 및 부드러운 스크롤 타겟
+  const reviewsSectionRef = useRef<HTMLDivElement>(null)
+  const scrollToReviews = () => {
+    if (reviewsSectionRef.current) {
+      reviewsSectionRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    }
+  }
+
+  // 가상 쿠폰 사용 처리
+  const handleUseCoupon = (code: string) => {
+    const nextMap = { ...usedCouponCodes, [code]: true }
+    setUsedCouponCodes(nextMap)
+    try {
+      localStorage.setItem('popple_used_coupons', JSON.stringify(nextMap))
+    } catch {
+      // 무시
+    }
+    showToast('쿠폰이 사용 처리되었습니다! ✨')
+  }
+
+  // localStorage에서 사용 완료된 쿠폰 목록 로드
+  useEffect(() => {
+    try {
+      const savedCoupons = localStorage.getItem('popple_used_coupons')
+      if (savedCoupons) {
+        setUsedCouponCodes(JSON.parse(savedCoupons))
+      }
+    } catch {
+      // 무시
+    }
+  }, [])
+
+  // 리뷰 평점 및 개수 요약
+  const averageRating =
+    reviews.length > 0
+      ? (reviews.reduce((acc, r) => acc + r.rating, 0) / reviews.length).toFixed(1)
+      : '4.8'
+  const totalReviewsCount = reviews.length > 0 ? reviews.length : 12
 
   // 리뷰 사진 첨부 상태
   const [reviewImageBase64, setReviewImageBase64] = useState<string | null>(null)
@@ -366,11 +418,30 @@ export function EventDetail({ event, onBack }: EventDetailProps) {
           </button>
         </div>
 
-        {/* 1번 본문: 타이틀, 소개글, 해시태그 칩들 */}
+        {/* 1번 본문: 타이틀, 미니 별점 요약(클릭 시 후기로 이동), 소개글, 해시태그 칩들 */}
         <div className="px-5 pt-5">
-          <span className="text-[11px] font-black tracking-widest text-[#1884F7] uppercase mb-1.5 block">
-            LOCAL FESTIVAL
-          </span>
+          <div className="flex items-center justify-between gap-2 mb-2">
+            <span className="text-[11px] font-black tracking-widest text-[#1884F7] uppercase">
+              {categoryBadge}
+            </span>
+
+            {/* 상단 미니 별점 요약 (클릭 시 하단 '방문 후기' 영역으로 부드럽게 스크롤) */}
+            <button
+              type="button"
+              onClick={scrollToReviews}
+              className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-50 hover:bg-amber-100/90 border border-amber-200/70 text-amber-900 text-xs font-bold transition-all active:scale-95 group cursor-pointer shadow-2xs"
+              title="방문 후기 영역으로 이동"
+            >
+              <span className="flex items-center text-amber-500 gap-0.5">
+                <Star className="size-3.5 fill-amber-400 text-amber-400" />
+                <span className="font-black text-amber-900">{averageRating}</span>
+              </span>
+              <span className="text-[11px] text-slate-500 font-semibold group-hover:text-slate-800">
+                (후기 {totalReviewsCount}개)
+              </span>
+              <ChevronRight className="size-3 text-slate-400 group-hover:text-slate-700 group-hover:translate-x-0.5 transition-transform" />
+            </button>
+          </div>
 
           <h2 className="text-2xl font-black text-slate-900 leading-tight tracking-tight break-keep">
             {event.title}
@@ -490,8 +561,145 @@ export function EventDetail({ event, onBack }: EventDetailProps) {
         {/* 구분선 */}
         <hr className="my-6 border-slate-100" />
 
+        {/* [신설] 함께 가기 좋은 인근 핫플 (도보 거리 식당 1곳 + 카페 1곳 + 가상 쿠폰) */}
+        <section aria-labelledby="section-nearby-spots" className="px-5">
+          <div className="flex items-center justify-between mb-3.5">
+            <div className="flex items-center gap-2.5">
+              <div className="size-9 rounded-xl bg-orange-50 flex items-center justify-center text-orange-500">
+                <UtensilsCrossed className="size-5" />
+              </div>
+              <div>
+                <span className="text-[10px] font-black text-orange-500 tracking-wider uppercase block">
+                  NEARBY HOTSPOTS
+                </span>
+                <h3 id="section-nearby-spots" className="text-lg font-black text-slate-900 tracking-tight leading-tight">
+                  함께 가기 좋은 인근 핫플
+                </h3>
+              </div>
+            </div>
+
+            <span className="text-xs font-bold text-slate-400">
+              도보 5분 이내
+            </span>
+          </div>
+
+          {/* 인근 추천 장소 카드 리스트 (달력 행사 카드 규격 100% 통일) */}
+          <div className="flex flex-col gap-3.5">
+            {nearbySpots.map((spot) => {
+              const isUsed = !!usedCouponCodes[spot.coupon.code]
+
+              return (
+                <article
+                  key={spot.id}
+                  onClick={() => setSelectedCouponSpot(spot)}
+                  className="group relative bg-white rounded-3xl p-3 border border-slate-100 shadow-[0_4px_16px_rgba(0,0,0,0.03)] flex gap-3.5 hover:shadow-md transition-all active:scale-[0.99] cursor-pointer"
+                >
+                  {/* 좌측: 둥근 모서리의 직사각형 썸네일 이미지 (달력 카드 규격 통일) */}
+                  <div className="relative w-[112px] min-w-[112px] h-[190px] rounded-2xl overflow-hidden bg-slate-100 shrink-0 border border-slate-100/80">
+                    <span
+                      className={`absolute top-2.5 left-2.5 z-10 px-2 py-0.5 rounded-lg text-[10px] font-black text-white shadow-xs ${
+                        spot.category === '식당' ? 'bg-[#F43F5E]' : 'bg-[#1884F7]'
+                      }`}
+                    >
+                      {spot.category}
+                    </span>
+
+                    <span className="absolute top-2.5 right-2 z-10 px-1.5 py-0.5 rounded-full text-[9px] font-bold text-white bg-black/60 backdrop-blur-md">
+                      {spot.coupon.dday}
+                    </span>
+
+                    <EventImage
+                      src={spot.imageUrl}
+                      alt={spot.name}
+                      fill
+                      sizes="112px"
+                      referrerPolicy="no-referrer"
+                      className="object-cover transition-transform duration-300 group-hover:scale-105"
+                    />
+                  </div>
+
+                  {/* 중앙/우측: 가게 정보 및 포인트 컬러 쿠폰 버튼 */}
+                  <div className="flex flex-col justify-between flex-1 py-0.5 min-w-0">
+                    <div>
+                      {/* 상단: 가게명 볼드 타이틀 + 우측 포인트 컬러 쿠폰 뱃지 버튼 */}
+                      <div className="flex items-start justify-between gap-1.5">
+                        <div className="min-w-0 pr-1">
+                          <span
+                            className={`inline-block px-1.5 py-0.5 mb-1 rounded text-[10px] font-black ${
+                              spot.category === '식당'
+                                ? 'bg-rose-50 text-[#F43F5E]'
+                                : 'bg-blue-50 text-[#1884F7]'
+                            }`}
+                          >
+                            {spot.category}
+                          </span>
+                          <h4 className="text-[15px] font-black text-slate-900 leading-snug line-clamp-1">
+                            {spot.name}
+                          </h4>
+                        </div>
+
+                        {/* 포인트 컬러 쿠폰 뱃지 버튼 */}
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            setSelectedCouponSpot(spot)
+                          }}
+                          className={`inline-flex items-center gap-1 px-2 py-1 rounded-xl text-[10px] font-black shrink-0 transition-all active:scale-95 shadow-2xs ${
+                            isUsed
+                              ? 'bg-slate-100 text-slate-400'
+                              : 'bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white shadow-orange-500/20'
+                          }`}
+                        >
+                          <Tag className="size-3" />
+                          <span>{isUsed ? '사용완료' : `${spot.coupon.discount} 받기`}</span>
+                        </button>
+                      </div>
+
+                      {/* 상세 정보: 거리 정보, 대표 키워드 태그, 쿠폰 혜택 요약 */}
+                      <div className="flex flex-col gap-1 mt-2 text-xs">
+                        <div className="flex items-center text-slate-700 font-bold">
+                          <MapPin className="size-3.5 text-[#1884F7] shrink-0 mr-1.5" />
+                          <span className="truncate">{spot.distance}</span>
+                        </div>
+                        <div className="text-[11px] text-slate-400 font-medium truncate">
+                          {spot.tag}
+                        </div>
+                        <div className="mt-1">
+                          <span className="inline-flex items-center text-[11px] font-bold text-amber-800 bg-amber-50 border border-amber-200/60 rounded-md px-1.5 py-0.5 truncate max-w-full">
+                            🏷️ {spot.coupon.title}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* 하단: 달력 카드와 동일한 규격의 액션 버튼 */}
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        setSelectedCouponSpot(spot)
+                      }}
+                      className="bg-[#F0F7FF] hover:bg-[#E2F0FE] active:scale-[0.98] text-[#1884F7] rounded-xl px-3.5 py-2.5 flex items-center justify-between text-xs font-black transition-colors w-full mt-3"
+                    >
+                      <span>{isUsed ? '쿠폰 상세 / 바코드' : '가상 쿠폰 받기'}</span>
+                      <span className="flex items-center gap-0.5 font-bold text-slate-500">
+                        <span>{isUsed ? '확인' : '바코드'}</span>
+                        <ChevronRight className="size-3.5 text-[#1884F7] stroke-[2.5]" />
+                      </span>
+                    </button>
+                  </div>
+                </article>
+              )
+            })}
+          </div>
+        </section>
+
+        {/* 구분선 */}
+        <hr className="my-6 border-slate-100" />
+
         {/* 4번: 방문 후기 섹션 (간이 방명록) */}
-        <section aria-labelledby="section-reviews" className="px-5">
+        <section ref={reviewsSectionRef} aria-labelledby="section-reviews" className="px-5 scroll-mt-20">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2.5">
               <div className="size-9 rounded-xl bg-[#E8F3FF] flex items-center justify-center text-[#1884F7]">
@@ -711,6 +919,107 @@ export function EventDetail({ event, onBack }: EventDetailProps) {
           </a>
         </div>
       </div>
+
+      {/* 5. 가상 쿠폰 사용 모달창 (모바일 바코드 형태) */}
+      {selectedCouponSpot && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-200"
+          onClick={() => setSelectedCouponSpot(null)}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="relative w-full max-w-sm bg-white rounded-3xl p-6 shadow-2xl border border-slate-100 flex flex-col items-center animate-in zoom-in-95 duration-200 text-center"
+          >
+            {/* 닫기 (X) 버튼 */}
+            <button
+              type="button"
+              onClick={() => setSelectedCouponSpot(null)}
+              aria-label="닫기"
+              className="absolute top-4 right-4 size-8 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-500 transition-colors"
+            >
+              <X className="size-4" />
+            </button>
+
+            {/* 상단 뱃지 & 타이틀 */}
+            <div className="flex items-center gap-1.5 mb-1">
+              <span
+                className={`text-[10px] font-black px-2 py-0.5 rounded-full text-white ${
+                  selectedCouponSpot.category === '식당' ? 'bg-[#F43F5E]' : 'bg-[#1884F7]'
+                }`}
+              >
+                {selectedCouponSpot.category}
+              </span>
+              <span className="text-[10px] font-bold text-amber-600 bg-amber-50 border border-amber-200/60 px-2 py-0.5 rounded-full">
+                {selectedCouponSpot.coupon.dday} 남음
+              </span>
+            </div>
+
+            <h3 className="text-lg font-black text-slate-900 mt-1">
+              {selectedCouponSpot.name}
+            </h3>
+
+            <div className="mt-2 text-center">
+              <span className="text-2xl font-black text-[#1884F7] tracking-tight">
+                {selectedCouponSpot.coupon.discount}
+              </span>
+              <p className="text-xs font-bold text-slate-700 mt-0.5">
+                {selectedCouponSpot.coupon.benefit}
+              </p>
+            </div>
+
+            {/* 가상 모바일 바코드 그래픽 */}
+            <div className="my-5 w-full bg-slate-50 rounded-2xl border border-dashed border-slate-300 p-4 flex flex-col items-center">
+              {/* 바코드 바 (Vertical Stripes) */}
+              <div className="h-14 w-full flex items-center justify-center gap-1 sm:gap-1.5 px-2 overflow-hidden select-none">
+                {[3, 1, 4, 2, 5, 1, 3, 2, 4, 1, 3, 5, 2, 1, 4, 2, 3, 1, 5, 2, 4, 1, 3].map((w, i) => (
+                  <div
+                    key={i}
+                    className="h-full bg-slate-900 rounded-xs"
+                    style={{ width: `${w * 1.5}px` }}
+                  />
+                ))}
+              </div>
+
+              {/* 쿠폰 고유 코드 및 번호 */}
+              <span className="text-xs font-mono font-black text-slate-800 tracking-widest mt-2">
+                {selectedCouponSpot.coupon.code}
+              </span>
+
+              {/* 유효기간 */}
+              <span className="text-[10px] text-slate-400 font-medium mt-1">
+                유효기간: {selectedCouponSpot.coupon.validUntil}
+              </span>
+            </div>
+
+            {/* [직원 확인 및 사용하기] 버튼 */}
+            {usedCouponCodes[selectedCouponSpot.coupon.code] ? (
+              <button
+                type="button"
+                disabled
+                className="w-full py-3.5 rounded-2xl bg-slate-100 text-slate-400 font-bold text-sm cursor-not-allowed flex items-center justify-center gap-1.5"
+              >
+                <Check className="size-4 stroke-[3]" />
+                <span>사용 완료된 쿠폰입니다</span>
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={() => handleUseCoupon(selectedCouponSpot.coupon.code)}
+                className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-[#1884F7] to-sky-500 hover:from-blue-600 hover:to-sky-600 active:scale-[0.98] text-white font-black text-sm shadow-md shadow-sky-500/20 transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+              >
+                <Ticket className="size-4" />
+                <span>직원 확인 및 사용하기</span>
+              </button>
+            )}
+
+            <p className="text-[10.5px] text-slate-400 mt-2.5">
+              주문 또는 결제 시 매장 직원에게 위 바코드를 제시해 주세요.
+            </p>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
