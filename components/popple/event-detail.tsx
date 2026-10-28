@@ -24,7 +24,12 @@ import {
   Tag,
   Ticket,
 } from 'lucide-react'
-import type { PoppleEvent } from '@/lib/events'
+import {
+  type PoppleEvent,
+  type WaitingStatus,
+  WAITING_STATUS_CONFIG,
+  getDefaultWaitingStatus,
+} from '@/lib/events'
 import { getUserProfile } from '@/lib/mypage'
 import { supabase } from '@/lib/supabaseClient'
 import { compressImageFileToBase64 } from '@/lib/community'
@@ -88,10 +93,57 @@ export function EventDetail({ event, onBack }: EventDetailProps) {
   const [selectedCouponSpot, setSelectedCouponSpot] = useState<NearbySpot | null>(null)
   const [usedCouponCodes, setUsedCouponCodes] = useState<Record<string, boolean>>({})
 
+  // 실시간 현장 대기시간 상태 ("SMOOTH" | "NORMAL" | "CROWDED" | "CLOSED")
+  const [waitingStatus, setWaitingStatus] = useState<WaitingStatus>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem(`popple_waiting_status_${event.id}`) as WaitingStatus | null
+      if (saved && WAITING_STATUS_CONFIG[saved]) return saved
+    }
+    return event.waitingStatus || getDefaultWaitingStatus(event)
+  })
+
+  // 대기시간 퀵 공유 모달 상태 & 쿠폰 발급 대기 타겟
+  const [isWaitingModalOpen, setIsWaitingModalOpen] = useState(false)
+  const [pendingCouponSpot, setPendingCouponSpot] = useState<NearbySpot | null>(null)
+
+  const currentWaitingConfig = WAITING_STATUS_CONFIG[waitingStatus] || WAITING_STATUS_CONFIG.SMOOTH
+
   const nearbySpots = useMemo(
     () => getNearbySpotsForEvent(event.location, event.title),
     [event.location, event.title],
   )
+
+  // 쿠폰 버튼 클릭 핸들러 (사용 전이면 '대기시간 퀵 공유' 모달 먼저 노출)
+  const handleCouponButtonClick = (spot: NearbySpot) => {
+    const isUsed = !!usedCouponCodes[spot.coupon.code]
+    if (isUsed) {
+      // 이미 사용된 쿠폰인 경우 바로 상세 바코드 모달 오픈
+      setSelectedCouponSpot(spot)
+    } else {
+      // 미사용 쿠폰 발급 전 '현장 대기시간 공유' 팝업 오픈
+      setPendingCouponSpot(spot)
+      setIsWaitingModalOpen(true)
+    }
+  }
+
+  // 현장 대기시간 퀵 공유 완료 핸들러
+  const handleSelectWaitingStatus = (status: WaitingStatus) => {
+    setWaitingStatus(status)
+    try {
+      localStorage.setItem(`popple_waiting_status_${event.id}`, status)
+    } catch {
+      // 무시
+    }
+    showToast('소중한 정보 감사합니다! 쿠폰이 발급되었습니다.')
+    setIsWaitingModalOpen(false)
+
+    // 즉시 기존 '가상 바코드 쿠폰 모달'로 화면 전환
+    const targetSpot = pendingCouponSpot || nearbySpots[0]
+    if (targetSpot) {
+      setSelectedCouponSpot(targetSpot)
+    }
+    setPendingCouponSpot(null)
+  }
 
   // 상단 미니 별점 요약 및 부드러운 스크롤 타겟
   const reviewsSectionRef = useRef<HTMLDivElement>(null)
@@ -308,7 +360,7 @@ export function EventDetail({ event, onBack }: EventDetailProps) {
     >
       {/* 토스트 알림 */}
       {toastMessage && (
-        <div className="fixed top-6 left-1/2 -translate-x-1/2 z-50 rounded-full bg-slate-900/90 text-white px-4 py-2 text-xs font-semibold shadow-lg backdrop-blur-md animate-in fade-in slide-in-from-top-2">
+        <div className="fixed top-6 left-1/2 -translate-x-1/2 z-[70] rounded-full bg-slate-900/90 text-white px-4 py-2 text-xs font-semibold shadow-lg backdrop-blur-md animate-in fade-in slide-in-from-top-2">
           {toastMessage}
         </div>
       )}
@@ -374,10 +426,29 @@ export function EventDetail({ event, onBack }: EventDetailProps) {
 
         {/* 1번 본문: 타이틀, 미니 별점 요약(클릭 시 후기로 이동), 소개글, 해시태그 칩들 */}
         <div className="px-5 pt-5">
-          <div className="flex items-center justify-between gap-2 mb-2">
-            <span className="text-[11px] font-black tracking-widest text-[#1884F7] uppercase">
-              {categoryBadge}
-            </span>
+          <div className="flex items-center justify-between gap-2 mb-2 flex-wrap">
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="text-[11px] font-black tracking-widest text-[#1884F7] uppercase">
+                {categoryBadge}
+              </span>
+
+              {/* 실시간 현장 대기 상태 뱃지 */}
+              <button
+                type="button"
+                onClick={() => {
+                  setPendingCouponSpot(nearbySpots[0] || null)
+                  setIsWaitingModalOpen(true)
+                }}
+                className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold border transition-all active:scale-95 shadow-2xs cursor-pointer ${currentWaitingConfig.bgClass} ${currentWaitingConfig.borderClass}`}
+                title="실시간 현장 대기상황 공유하기"
+              >
+                <span className={`size-2 rounded-full ${currentWaitingConfig.dotColor} animate-pulse`} />
+                <span>{currentWaitingConfig.emoji} {currentWaitingConfig.label}</span>
+                <span className="text-[10px] opacity-80 font-medium hidden xs:inline">
+                  ({currentWaitingConfig.desc})
+                </span>
+              </button>
+            </div>
 
             {/* 상단 미니 별점 요약 (클릭 시 하단 '방문 후기' 영역으로 부드럽게 스크롤) */}
             <button
@@ -433,6 +504,29 @@ export function EventDetail({ event, onBack }: EventDetailProps) {
           </div>
 
           <div className="space-y-3 text-sm">
+            {/* 실시간 현장 대기 현황 */}
+            <div className="flex items-start">
+              <span className="w-20 shrink-0 text-slate-400 font-medium">실시간 대기</span>
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold border ${currentWaitingConfig.bgClass} ${currentWaitingConfig.borderClass}`}>
+                  <span className={`size-2 rounded-full ${currentWaitingConfig.dotColor} animate-pulse`} />
+                  <span>{currentWaitingConfig.emoji} {currentWaitingConfig.label}</span>
+                  <span className="text-[11px] opacity-85 font-medium">({currentWaitingConfig.desc})</span>
+                </span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setPendingCouponSpot(nearbySpots[0] || null)
+                    setIsWaitingModalOpen(true)
+                  }}
+                  className="text-xs text-[#1884F7] hover:underline font-bold inline-flex items-center gap-0.5 cursor-pointer"
+                >
+                  <span>현장 상황 공유하기</span>
+                  <ChevronRight className="size-3" />
+                </button>
+              </div>
+            </div>
+
             <div className="flex items-start">
               <span className="w-20 shrink-0 text-slate-400 font-medium">기간</span>
               <span className="font-bold text-slate-800 break-keep">{event.date}</span>
@@ -545,7 +639,7 @@ export function EventDetail({ event, onBack }: EventDetailProps) {
               return (
                 <article
                   key={spot.id}
-                  onClick={() => setSelectedCouponSpot(spot)}
+                  onClick={() => handleCouponButtonClick(spot)}
                   className="group relative bg-white rounded-3xl p-3 border border-slate-100 shadow-[0_4px_16px_rgba(0,0,0,0.03)] flex gap-3.5 hover:shadow-md transition-all active:scale-[0.99] cursor-pointer"
                 >
                   {/* 좌측: 둥근 모서리의 직사각형 썸네일 이미지 (달력 카드 규격 통일) */}
@@ -597,7 +691,7 @@ export function EventDetail({ event, onBack }: EventDetailProps) {
                           type="button"
                           onClick={(e) => {
                             e.stopPropagation()
-                            setSelectedCouponSpot(spot)
+                            handleCouponButtonClick(spot)
                           }}
                           className={`inline-flex items-center gap-1 px-2 py-1 rounded-xl text-[10px] font-black shrink-0 transition-all active:scale-95 shadow-2xs ${
                             isUsed
@@ -632,7 +726,7 @@ export function EventDetail({ event, onBack }: EventDetailProps) {
                       type="button"
                       onClick={(e) => {
                         e.stopPropagation()
-                        setSelectedCouponSpot(spot)
+                        handleCouponButtonClick(spot)
                       }}
                       className="bg-[#F0F7FF] hover:bg-[#E2F0FE] active:scale-[0.98] text-[#1884F7] rounded-xl px-3.5 py-2.5 flex items-center justify-between text-xs font-black transition-colors w-full mt-3"
                     >
@@ -880,7 +974,121 @@ export function EventDetail({ event, onBack }: EventDetailProps) {
         </div>
       </div>
 
-      {/* 5. 가상 쿠폰 사용 모달창 (모바일 바코드 형태) */}
+      {/* 5-1. 현장 대기시간 퀵 공유 모달 (가상 상생 쿠폰 발급 전) */}
+      {isWaitingModalOpen && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-200"
+          onClick={() => {
+            setIsWaitingModalOpen(false)
+            setPendingCouponSpot(null)
+          }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="relative w-full max-w-sm bg-white rounded-3xl p-6 shadow-2xl border border-slate-100 flex flex-col items-center animate-in zoom-in-95 duration-200 text-center"
+          >
+            {/* 닫기 (X) 버튼 */}
+            <button
+              type="button"
+              onClick={() => {
+                setIsWaitingModalOpen(false)
+                setPendingCouponSpot(null)
+              }}
+              aria-label="닫기"
+              className="absolute top-4 right-4 size-8 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-500 transition-colors cursor-pointer"
+            >
+              <X className="size-4" />
+            </button>
+
+            {/* 상단 기프트 아이콘 */}
+            <div className="size-14 rounded-2xl bg-amber-50 border border-amber-200/80 flex items-center justify-center text-2xl mb-3 shadow-inner">
+              🎁
+            </div>
+
+            {/* 모달 타이틀 */}
+            <h3 className="text-lg font-black text-slate-900 tracking-tight leading-snug break-keep">
+              현장 상황을 공유하고 할인 쿠폰을 받아보세요! 🎁
+            </h3>
+
+            <p className="mt-1.5 text-xs text-slate-500 break-keep">
+              {pendingCouponSpot ? (
+                <span>
+                  <strong className="text-slate-800">{pendingCouponSpot.name}</strong> 혜택을 받기 전, 현재 대기 상황을 알려주세요!
+                </span>
+              ) : (
+                '지금 현장의 생생한 대기 시간을 1초 만에 알려주세요!'
+              )}
+            </p>
+
+            {/* 선택 버튼 (4개 칩 형태) */}
+            <div className="grid grid-cols-2 gap-2.5 w-full mt-5">
+              <button
+                type="button"
+                onClick={() => handleSelectWaitingStatus('SMOOTH')}
+                className="flex flex-col items-center justify-center py-3.5 px-3 rounded-2xl border-2 border-emerald-300 bg-emerald-50/70 hover:bg-emerald-100 active:scale-95 transition-all text-emerald-950 font-bold shadow-xs cursor-pointer group"
+              >
+                <div className="flex items-center gap-1.5 text-sm font-black">
+                  <span>🟢</span>
+                  <span>대기 없음</span>
+                </div>
+                <span className="text-[11px] text-emerald-700/90 font-medium mt-1">
+                  10분 미만
+                </span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => handleSelectWaitingStatus('NORMAL')}
+                className="flex flex-col items-center justify-center py-3.5 px-3 rounded-2xl border-2 border-amber-300 bg-amber-50/70 hover:bg-amber-100 active:scale-95 transition-all text-amber-950 font-bold shadow-xs cursor-pointer group"
+              >
+                <div className="flex items-center gap-1.5 text-sm font-black">
+                  <span>🟡</span>
+                  <span>10~30분</span>
+                </div>
+                <span className="text-[11px] text-amber-700/90 font-medium mt-1">
+                  보통
+                </span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => handleSelectWaitingStatus('CROWDED')}
+                className="flex flex-col items-center justify-center py-3.5 px-3 rounded-2xl border-2 border-orange-300 bg-orange-50/70 hover:bg-orange-100 active:scale-95 transition-all text-orange-950 font-bold shadow-xs cursor-pointer group"
+              >
+                <div className="flex items-center gap-1.5 text-sm font-black">
+                  <span>🟠</span>
+                  <span>1시간 이상</span>
+                </div>
+                <span className="text-[11px] text-orange-700/90 font-medium mt-1">
+                  혼잡
+                </span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => handleSelectWaitingStatus('CLOSED')}
+                className="flex flex-col items-center justify-center py-3.5 px-3 rounded-2xl border-2 border-rose-300 bg-rose-50/70 hover:bg-rose-100 active:scale-95 transition-all text-rose-950 font-bold shadow-xs cursor-pointer group"
+              >
+                <div className="flex items-center gap-1.5 text-sm font-black">
+                  <span>🔴</span>
+                  <span>현장 마감</span>
+                </div>
+                <span className="text-[11px] text-rose-700/90 font-medium mt-1">
+                  금일 마감
+                </span>
+              </button>
+            </div>
+
+            <p className="mt-4 text-[11px] text-slate-400 font-medium">
+              💡 상태를 1회 탭하면 즉시 가상 바코드 쿠폰이 발급됩니다.
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* 5-2. 가상 쿠폰 사용 모달창 (모바일 바코드 형태) */}
       {selectedCouponSpot && (
         <div
           role="dialog"

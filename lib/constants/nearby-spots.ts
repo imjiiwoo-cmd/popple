@@ -13,6 +13,8 @@ export interface NearbyCoupon {
   validUntil: string
 }
 
+import type { WaitingStatus } from '@/lib/events'
+
 export interface NearbySpot {
   id: string
   category: '식당' | '카페'
@@ -21,6 +23,7 @@ export interface NearbySpot {
   tag: string
   imageUrl: string
   coupon: NearbyCoupon
+  waitingStatus?: WaitingStatus
 }
 
 // 1. 성수 권역 (성동구, 성수동 일대)
@@ -39,6 +42,7 @@ const SEONGSU_RESTAURANT: NearbySpot = {
     benefit: '식사 메뉴 2인 이상 주문 시 10% 현장 즉시 할인',
     validUntil: '2026.11.30까지',
   },
+  waitingStatus: 'CROWDED',
 }
 
 const SEONGSU_CAFE: NearbySpot = {
@@ -56,6 +60,7 @@ const SEONGSU_CAFE: NearbySpot = {
     benefit: '제조 음료 주문 시 1,000원 즉시 할인',
     validUntil: '2026.11.30까지',
   },
+  waitingStatus: 'NORMAL',
 }
 
 // 2. 종로/광화문/경복궁/서촌 권역
@@ -74,6 +79,7 @@ const JONGNO_RESTAURANT: NearbySpot = {
     benefit: '식사 메뉴 주문 시 10% 현장 즉시 할인',
     validUntil: '2026.11.30까지',
   },
+  waitingStatus: 'NORMAL',
 }
 
 const JONGNO_CAFE: NearbySpot = {
@@ -91,6 +97,7 @@ const JONGNO_CAFE: NearbySpot = {
     benefit: '음료 + 타르트 2개 세트 구매 시 1,500원 즉시 할인',
     validUntil: '2026.11.30까지',
   },
+  waitingStatus: 'SMOOTH',
 }
 
 // 3. 잠실/송파 권역

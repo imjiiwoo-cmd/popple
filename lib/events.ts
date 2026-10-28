@@ -1,3 +1,76 @@
+export type WaitingStatus = 'SMOOTH' | 'NORMAL' | 'CROWDED' | 'CLOSED'
+
+export interface WaitingStatusConfig {
+  status: WaitingStatus
+  label: string
+  emoji: string
+  badgeText: string
+  dotColor: string
+  bgClass: string
+  borderClass: string
+  textClass: string
+  desc: string
+}
+
+export const WAITING_STATUS_CONFIG: Record<WaitingStatus, WaitingStatusConfig> = {
+  SMOOTH: {
+    status: 'SMOOTH',
+    label: '원활',
+    emoji: '🟢',
+    badgeText: '🟢 원활 (대기 없음)',
+    dotColor: 'bg-emerald-500',
+    bgClass: 'bg-emerald-50 text-emerald-700',
+    borderClass: 'border-emerald-200/80',
+    textClass: 'text-emerald-700',
+    desc: '대기 없음 / 10분 미만',
+  },
+  NORMAL: {
+    status: 'NORMAL',
+    label: '보통',
+    emoji: '🟡',
+    badgeText: '🟡 보통 (대기 20~30분)',
+    dotColor: 'bg-amber-400',
+    bgClass: 'bg-amber-50 text-amber-800',
+    borderClass: 'border-amber-200/80',
+    textClass: 'text-amber-800',
+    desc: '대기 약 20~30분',
+  },
+  CROWDED: {
+    status: 'CROWDED',
+    label: '혼잡',
+    emoji: '🟠',
+    badgeText: '🟠 혼잡 (대기 1시간 이상)',
+    dotColor: 'bg-orange-500',
+    bgClass: 'bg-orange-50 text-orange-800',
+    borderClass: 'border-orange-200/80',
+    textClass: 'text-orange-800',
+    desc: '대기 1시간 이상',
+  },
+  CLOSED: {
+    status: 'CLOSED',
+    label: '마감',
+    emoji: '🔴',
+    badgeText: '🔴 마감 (현장 마감)',
+    dotColor: 'bg-rose-500',
+    bgClass: 'bg-rose-50 text-rose-800',
+    borderClass: 'border-rose-200/80',
+    textClass: 'text-rose-800',
+    desc: '금일 현장 대기 마감',
+  },
+}
+
+export function getDefaultWaitingStatus(event?: { title?: string; category?: string; waitingStatus?: WaitingStatus }): WaitingStatus {
+  if (event?.waitingStatus) return event.waitingStatus
+  const title = (event?.title || '').toLowerCase()
+  if (title.includes('디올') || title.includes('루피') || title.includes('팝업')) {
+    return 'CROWDED'
+  }
+  if (title.includes('경복궁') || title.includes('수원화성') || title.includes('빛초롱')) {
+    return 'NORMAL'
+  }
+  return 'SMOOTH'
+}
+
 export type PoppleEvent = {
   id: string
   title: string
@@ -15,6 +88,7 @@ export type PoppleEvent = {
   startDate?: string
   endDate?: string
   viewCount?: number
+  waitingStatus?: WaitingStatus
 }
 
 export const MOCK_EVENTS: PoppleEvent[] = [

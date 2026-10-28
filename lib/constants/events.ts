@@ -24,6 +24,7 @@ export const PRESET_FESTIVALS: PresetCalendarFestival[] = [
     category: '지역축제',
     description: '은은한 달빛 아래 고즈넉한 궁궐의 정취를 만끽하는 2026 경복궁 야간관람. 근정전과 경회루의 황홀한 야경을 감상해보세요.',
     viewCount: 14200,
+    waitingStatus: 'NORMAL',
   },
   {
     id: 'fest_preset_02',
@@ -39,6 +40,7 @@ export const PRESET_FESTIVALS: PresetCalendarFestival[] = [
     category: '지역축제',
     description: '광화문광장을 오색찬란한 전통과 현대의 빛 조형물로 수놓는 서울 대표 빛의 축제. 감성적인 가을 마켓과 푸드트럭존이 함께합니다.',
     viewCount: 11800,
+    waitingStatus: 'SMOOTH',
   },
   {
     id: 'fest_preset_03',
@@ -99,6 +101,7 @@ export const PRESET_FESTIVALS: PresetCalendarFestival[] = [
     category: '지역축제',
     description: '세계유산 수원화성의 웅장한 성벽을 캔버스 삼아 펼쳐지는 초대형 라이팅 쇼. 정조대왕의 꿈을 빛으로 재해석합니다.',
     viewCount: 8900,
+    waitingStatus: 'NORMAL',
   },
   {
     id: 'fest_preset_07',
@@ -300,6 +303,7 @@ export const PRESET_POPUPS: PoppleEvent[] = [
     category: '팝업스토어',
     description: '디올 성수가 선보이는 2026 어텀/윈터 가든 팝업. 식물원 테마의 프라이빗 정원과 꾸뛰르 컬렉션 미니 전시를 감상할 수 있습니다.',
     viewCount: 15400,
+    waitingStatus: 'CROWDED',
   },
   {
     id: 'popup_preset_02',
@@ -315,6 +319,7 @@ export const PRESET_POPUPS: PoppleEvent[] = [
     category: '팝업스토어',
     description: '글로벌 아트토이 브랜드 팝마트의 한정판 메가 스페이스 몰리 오프라인 단독 쇼케이스. 대형 조형물과 한정판 피규어 현장 래플 진행.',
     viewCount: 12800,
+    waitingStatus: 'NORMAL',
   },
   {
     id: 'popup_preset_03',
@@ -330,6 +335,7 @@ export const PRESET_POPUPS: PoppleEvent[] = [
     category: '팝업스토어',
     description: '귀여움 한도 초과! 마녀 모자를 쓴 잔망루피의 할로윈 테마 팝업스토어. 한정판 봉제인형과 포토부스, 럭키드로우가 가득합니다.',
     viewCount: 14900,
+    waitingStatus: 'CROWDED',
   },
   {
     id: 'popup_preset_04',
@@ -345,6 +351,7 @@ export const PRESET_POPUPS: PoppleEvent[] = [
     category: '팝업스토어',
     description: "노을빛을 닮은 장미 향수 '이브닝 글로우' 런칭 팝업. 독창적인 조각 오브제와 함께 나만의 시그니처 향을 찾아보세요.",
     viewCount: 13800,
+    waitingStatus: 'NORMAL',
   },
   {
     id: 'popup_preset_05',
