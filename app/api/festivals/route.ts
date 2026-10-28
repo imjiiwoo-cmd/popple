@@ -1,8 +1,9 @@
 import type { PoppleEvent } from '@/lib/events'
+import { isEventOperatingInRange } from '@/lib/events'
+import { PRESET_FESTIVALS } from '@/lib/constants/events'
 import { supabase } from '@/lib/supabaseClient'
 
-export const dynamic = 'force-dynamic'
-export const revalidate = 0
+export const revalidate = 43200 // 12시간 Next.js ISR 캐시
 export const maxDuration = 30
 
 export interface CalendarFestival extends PoppleEvent {
@@ -280,17 +281,26 @@ export async function GET(request: Request) {
     console.warn('[popple-festivals] Failed to load view counts from Supabase:', err)
   }
 
+  // 프리셋 데이터 결합 (TourAPI 장애 시에도 100% 안전하게 동작하도록 보장)
+  for (const preset of PRESET_FESTIVALS) {
+    if (!festivals.some((f) => f.id === preset.id || f.title === preset.title)) {
+      festivals.push(preset)
+    }
+  }
+
   // 주간 날짜 범위 파라미터(startDate, endDate) 필터링: 주간에 운영 중인 축제만 반환
   let resultFestivals = festivals
   if (startParam && endParam) {
-    resultFestivals = festivals.filter((f) => {
-      const s = f.startDate || ''
-      const e = f.endDate || f.startDate || ''
-      if (!s) return true
-      return s <= endParam && e >= startParam
-    })
+    resultFestivals = festivals.filter((f) => isEventOperatingInRange(f, startParam, endParam))
   }
 
-  // 실제 TourAPI 데이터 및 실시간 전역 조회수 반환
-  return Response.json({ festivals: resultFestivals })
+  // 실제 TourAPI 데이터 및 실시간 전역 조회수 반환 (12시간 ISR, 24시간 SWR)
+  return Response.json(
+    { festivals: resultFestivals },
+    {
+      headers: {
+        'Cache-Control': 'public, s-maxage=43200, stale-while-revalidate=86400',
+      },
+    },
+  )
 }

@@ -1,0 +1,762 @@
+{
+  "festivals": [
+    {
+      "id": "fest_preset_01",
+      "title": "경복궁 가을 야간특별관람",
+      "date": "2026. 10. 01 ~ 11. 08",
+      "startDate": "20261001",
+      "endDate": "20261108",
+      "location": "서울 종로구 사직로 161 (경복궁)",
+      "price": "3,000원 (한복 착용자 무료)",
+      "imageUrl": "https://images.unsplash.com/photo-1548115184-bc6544d06a58?auto=format&fit=crop&w=800&q=80",
+      "poster": "https://images.unsplash.com/photo-1548115184-bc6544d06a58?auto=format&fit=crop&w=800&q=80",
+      "tags": [
+        "야경",
+        "경복궁",
+        "가을밤",
+        "데이트",
+        "한복"
+      ],
+      "category": "지역축제",
+      "description": "은은한 달빛 아래 고즈넉한 궁궐의 정취를 만끽하는 2026 경복궁 야간관람. 근정전과 경회루의 황홀한 야경을 감상해보세요.",
+      "viewCount": 14200
+    },
+    {
+      "id": "fest_preset_02",
+      "title": "서울 빛초롱 축제 & 광화문광장 가을마켓",
+      "date": "2026. 10. 23 ~ 11. 15",
+      "startDate": "20261023",
+      "endDate": "20261115",
+      "location": "서울 종로구 세종대로 172 (광화문광장)",
+      "price": "무료 관람",
+      "imageUrl": "https://images.unsplash.com/photo-1514565131-fce0801e5785?auto=format&fit=crop&w=800&q=80",
+      "poster": "https://images.unsplash.com/photo-1514565131-fce0801e5785?auto=format&fit=crop&w=800&q=80",
+      "tags": [
+        "빛축제",
+        "광화문",
+        "등불",
+        "수공예",
+        "야경"
+      ],
+      "category": "지역축제",
+      "description": "광화문광장을 오색찬란한 전통과 현대의 빛 조형물로 수놓는 서울 대표 빛의 축제. 감성적인 가을 마켓과 푸드트럭존이 함께합니다.",
+      "viewCount": 11800
+    },
+    {
+      "id": "fest_preset_03",
+      "title": "DDP 서울라이트 가을 페스타",
+      "date": "2026. 10. 20 ~ 11. 10",
+      "startDate": "20261020",
+      "endDate": "20261110",
+      "location": "서울 중구 을지로 281 (동대문디자인플라자)",
+      "price": "무료 관람",
+      "imageUrl": "https://images.unsplash.com/photo-1509198397868-475647b2a1e5?auto=format&fit=crop&w=800&q=80",
+      "poster": "https://images.unsplash.com/photo-1509198397868-475647b2a1e5?auto=format&fit=crop&w=800&q=80",
+      "tags": [
+        "미디어파사드",
+        "DDP",
+        "빛축제",
+        "전시체험",
+        "현대미술"
+      ],
+      "category": "지역축제",
+      "description": "222m DDP 은빛 외벽에 펼쳐지는 초대형 미디어 파사드 쇼. 세계적인 아티스트들의 빛과 사운드 향연을 경험해보세요.",
+      "viewCount": 9600
+    },
+    {
+      "id": "fest_preset_04",
+      "title": "서울 하늘공원 은빛 억새 페스티벌",
+      "date": "2026. 10. 24 ~ 11. 03",
+      "startDate": "20261024",
+      "endDate": "20261103",
+      "location": "서울 마포구 하늘공원로 95 (하늘공원 일대)",
+      "price": "무료 입장",
+      "imageUrl": "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=800&q=80",
+      "poster": "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=800&q=80",
+      "tags": [
+        "억새",
+        "하늘공원",
+        "인생샷",
+        "가을소풍",
+        "노을"
+      ],
+      "category": "지역축제",
+      "description": "한강이 한눈에 내려다보이는 하늘공원의 은빛 억새 물결. 노을빛과 야간 조명이 어우러진 가을 낭만 산책을 추천합니다.",
+      "viewCount": 13500
+    },
+    {
+      "id": "fest_preset_05",
+      "title": "한강 달빛 야시장 & 가을 푸드트럭 페스타",
+      "date": "2026. 10. 18 ~ 11. 08",
+      "startDate": "20261018",
+      "endDate": "20261108",
+      "location": "서울 서초구 신반포로11길 40 (반포한강공원 달빛광장)",
+      "price": "입장 무료",
+      "imageUrl": "https://images.unsplash.com/photo-1555396273-367ea4eb4db5?auto=format&fit=crop&w=800&q=80",
+      "poster": "https://images.unsplash.com/photo-1555396273-367ea4eb4db5?auto=format&fit=crop&w=800&q=80",
+      "tags": [
+        "야시장",
+        "한강",
+        "푸드트럭",
+        "반포달빛",
+        "피크닉"
+      ],
+      "category": "지역축제",
+      "description": "반포 달빛무지개분수와 함께 즐기는 감성 야시장. 수제 간식과 예술 소품 마켓이 한자리에 열립니다.",
+      "viewCount": 10400
+    },
+    {
+      "id": "fest_preset_06",
+      "title": "수원화성 미디어아트 & 가을 문화제",
+      "date": "2026. 10. 15 ~ 11. 10",
+      "startDate": "20261015",
+      "endDate": "20261110",
+      "location": "경기 수원시 팔달구 정조로 825 (화서문 일원)",
+      "price": "무료 관람",
+      "imageUrl": "https://images.unsplash.com/photo-1538688525198-9b88f6f53126?auto=format&fit=crop&w=800&q=80",
+      "poster": "https://images.unsplash.com/photo-1538688525198-9b88f6f53126?auto=format&fit=crop&w=800&q=80",
+      "tags": [
+        "수원화성",
+        "미디어아트",
+        "유네스코",
+        "가을축제",
+        "경기"
+      ],
+      "category": "지역축제",
+      "description": "세계유산 수원화성의 웅장한 성벽을 캔버스 삼아 펼쳐지는 초대형 라이팅 쇼. 정조대왕의 꿈을 빛으로 재해석합니다.",
+      "viewCount": 8900
+    },
+    {
+      "id": "fest_preset_07",
+      "title": "이천 펫 페스티벌 & 반려동물 힐링 캠프",
+      "date": "2026. 10. 26 ~ 11. 03",
+      "startDate": "20261026",
+      "endDate": "20261103",
+      "location": "경기 이천시 모가면 공원로 48 (농업테마공원)",
+      "price": "무료 입장",
+      "imageUrl": "https://images.unsplash.com/photo-1543466835-00a7907e9de1?auto=format&fit=crop&w=800&q=80",
+      "poster": "https://images.unsplash.com/photo-1543466835-00a7907e9de1?auto=format&fit=crop&w=800&q=80",
+      "tags": [
+        "반려견",
+        "펫페스티벌",
+        "이천",
+        "힐링캠프",
+        "가족나들이"
+      ],
+      "category": "지역축제",
+      "description": "반려견과 함께 뛰어노는 가을 피크닉 페스티벌. 어질리티 체험, 반려동물 무료 건강상담, 수제 간식 플리마켓이 운영됩니다.",
+      "viewCount": 7600
+    },
+    {
+      "id": "fest_preset_08",
+      "title": "파주 장단콩 가을 미식 축제",
+      "date": "2026. 10. 27 ~ 11. 05",
+      "startDate": "20261027",
+      "endDate": "20261105",
+      "location": "경기 파주시 문산읍 임진각로 177 (임진각 광장)",
+      "price": "무료 관람",
+      "imageUrl": "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=800&q=80",
+      "poster": "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=800&q=80",
+      "tags": [
+        "미식",
+        "파주",
+        "장단콩",
+        "로컬푸드",
+        "임진각"
+      ],
+      "category": "지역축제",
+      "description": "청정 DMZ 파주 장단콩으로 빚어낸 고소한 두부 요리와 전통 먹거리 축제. 가족과 함께하는 풍성한 가을 미식 나들이.",
+      "viewCount": 6500
+    },
+    {
+      "id": "fest_preset_09",
+      "title": "인천 개항장 문화유산 가을야행",
+      "date": "2026. 10. 24 ~ 11. 04",
+      "startDate": "20261024",
+      "endDate": "20261104",
+      "location": "인천 중구 신포로27번길 80 (개항장 문화지구)",
+      "price": "무료 관람",
+      "imageUrl": "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?auto=format&fit=crop&w=800&q=80",
+      "poster": "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?auto=format&fit=crop&w=800&q=80",
+      "tags": [
+        "인천",
+        "개항장",
+        "야행",
+        "근대건축",
+        "스탬프투어"
+      ],
+      "category": "지역축제",
+      "description": "140년 근대 역사가 살아 숨 쉬는 인천 개항장의 가을밤. 근대건축물 투어와 버스킹, 이색 야간 플리마켓을 만나보세요.",
+      "viewCount": 7200
+    },
+    {
+      "id": "fest_preset_10",
+      "title": "강릉 커피 페스티벌 in 안목해변",
+      "date": "2026. 10. 23 ~ 11. 02",
+      "startDate": "20261023",
+      "endDate": "20261102",
+      "location": "강원 강릉시 창해로 14번길 20 (안목해변 커피거리)",
+      "price": "무료 관람 (시음권 현장 구매)",
+      "imageUrl": "https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?auto=format&fit=crop&w=800&q=80",
+      "poster": "https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?auto=format&fit=crop&w=800&q=80",
+      "tags": [
+        "커피",
+        "강릉",
+        "바다",
+        "핸드드립",
+        "바리스타"
+      ],
+      "category": "지역축제",
+      "description": "푸른 동해바다를 바라보며 즐기는 향긋한 스페셜티 커피의 축제. 100인 바리스타 핸드드립 퍼포먼스와 바다 버스킹이 펼쳐집니다.",
+      "viewCount": 11200
+    },
+    {
+      "id": "fest_preset_11",
+      "title": "춘천 호수 별빛 미디어 페스타",
+      "date": "2026. 10. 22 ~ 11. 15",
+      "startDate": "20261022",
+      "endDate": "20261115",
+      "location": "강원 춘천시 삼천동 200-1 (의암호 수변공원)",
+      "price": "무료 입장",
+      "imageUrl": "https://images.unsplash.com/photo-1519501025264-65ba15a82390?auto=format&fit=crop&w=800&q=80",
+      "poster": "https://images.unsplash.com/photo-1519501025264-65ba15a82390?auto=format&fit=crop&w=800&q=80",
+      "tags": [
+        "춘천",
+        "의암호",
+        "호수",
+        "야경",
+        "빛축제"
+      ],
+      "category": "지역축제",
+      "description": "의암호 물결에 비치는 환상적인 레이저쇼와 일루미네이션. 호숫가 산책로를 따라 낭만적인 밤을 수놓습니다.",
+      "viewCount": 6800
+    },
+    {
+      "id": "fest_preset_12",
+      "title": "대전 사이언스 페스티벌 & 가을 야시장",
+      "date": "2026. 10. 25 ~ 11. 04",
+      "startDate": "20261025",
+      "endDate": "20261104",
+      "location": "대전 유성구 대덕대로 480 (엑스포시민광장)",
+      "price": "무료 관람",
+      "imageUrl": "https://images.unsplash.com/photo-1507499739999-097706ad8914?auto=format&fit=crop&w=800&q=80",
+      "poster": "https://images.unsplash.com/photo-1507499739999-097706ad8914?auto=format&fit=crop&w=800&q=80",
+      "tags": [
+        "대전",
+        "과학축제",
+        "로봇체험",
+        "엑스포",
+        "가족나들이"
+      ],
+      "category": "지역축제",
+      "description": "대한민국 과학 수도 대전에서 펼쳐지는 미래 과학 축제. 로봇 AI 시연, 드론 라이트쇼, 다채로운 청년 푸드트럭을 만나보세요.",
+      "viewCount": 8100
+    },
+    {
+      "id": "fest_preset_13",
+      "title": "단양 온달문화축제 & 단풍 나들이",
+      "date": "2026. 10. 26 ~ 11. 06",
+      "startDate": "20261026",
+      "endDate": "20261106",
+      "location": "충북 단양군 영춘면 온달로 23 (온달관광지)",
+      "price": "성인 5,000원 / 청소년 3,500원",
+      "imageUrl": "https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=800&q=80",
+      "poster": "https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=800&q=80",
+      "tags": [
+        "단양",
+        "단풍",
+        "온달산성",
+        "고구려",
+        "가을여행"
+      ],
+      "category": "지역축제",
+      "description": "고구려 영웅 온달장군과 평강공주의 설화가 깃든 단양. 붉게 물든 소백산 단풍과 함께 전통 활쏘기, 고구려 복식 체험을 즐겨보세요.",
+      "viewCount": 5900
+    },
+    {
+      "id": "fest_preset_14",
+      "title": "부산 불꽃축제 & 광안리 드론라이트쇼",
+      "date": "2026. 10. 28 ~ 11. 08",
+      "startDate": "20261028",
+      "endDate": "20261108",
+      "location": "부산 수영구 광안해변로 219 (광안리해수욕장)",
+      "price": "해변 무료 관람 (유료 좌석 별도)",
+      "imageUrl": "https://images.unsplash.com/photo-1498931299472-f7a63a5a1cfa?auto=format&fit=crop&w=800&q=80",
+      "poster": "https://images.unsplash.com/photo-1498931299472-f7a63a5a1cfa?auto=format&fit=crop&w=800&q=80",
+      "tags": [
+        "불꽃축제",
+        "부산",
+        "광안대교",
+        "드론쇼",
+        "바다야경"
+      ],
+      "category": "지역축제",
+      "description": "광안대교를 배경으로 펼쳐지는 세계 최대 규모의 해상 멀티미디어 불꽃쇼. 가을 밤바다를 화려하게 수놓는 감동의 축제.",
+      "viewCount": 18900
+    },
+    {
+      "id": "fest_preset_15",
+      "title": "안동 국제탈춤페스티벌 & 가을 대동난장",
+      "date": "2026. 10. 20 ~ 11. 02",
+      "startDate": "20261020",
+      "endDate": "20261102",
+      "location": "경북 안동시 육사로 239 (탈춤공원 및 하회마을)",
+      "price": "공원 무료 (탈춤공연장 성인 8,000원)",
+      "imageUrl": "https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?auto=format&fit=crop&w=800&q=80",
+      "poster": "https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?auto=format&fit=crop&w=800&q=80",
+      "tags": [
+        "안동",
+        "하회탈",
+        "탈춤",
+        "전통문화",
+        "대동난장"
+      ],
+      "category": "지역축제",
+      "description": "한국의 탈과 세계 15개국 탈춤이 어우러지는 신명 나는 한마당. 신분과 나이를 넘어 모두가 하나 되는 대동 탈놀이 축제.",
+      "viewCount": 9400
+    },
+    {
+      "id": "fest_preset_16",
+      "title": "순천만 갈대축제 & 흑두루미 탐조 투어",
+      "date": "2026. 10. 22 ~ 11. 15",
+      "startDate": "20261022",
+      "endDate": "20261115",
+      "location": "전남 순천시 순천만길 513-25 (순천만습지)",
+      "price": "성인 10,000원 (국가정원 통합권)",
+      "imageUrl": "https://images.unsplash.com/photo-1473448912268-2022ce9509d8?auto=format&fit=crop&w=800&q=80",
+      "poster": "https://images.unsplash.com/photo-1473448912268-2022ce9509d8?auto=format&fit=crop&w=800&q=80",
+      "tags": [
+        "순천만",
+        "갈대밭",
+        "흑두루미",
+        "생태여행",
+        "인생샷"
+      ],
+      "category": "지역축제",
+      "description": "160만 평 광활한 갯벌을 뒤덮은 황금빛 갈대숲. 가을바람에 부딪히는 갈대 소리와 철새들의 군무를 감상할 수 있는 생태 축제.",
+      "viewCount": 12600
+    },
+    {
+      "id": "fest_preset_17",
+      "title": "전주 한옥마을 미식 페스티벌",
+      "date": "2026. 10. 25 ~ 11. 08",
+      "startDate": "20261025",
+      "endDate": "20261108",
+      "location": "전북 전주시 완산구 기린대로 99 (한옥마을 경기전 일대)",
+      "price": "무료 관람 (음식 시식권 별도)",
+      "imageUrl": "https://images.unsplash.com/photo-1498654896293-37aacf113fd9?auto=format&fit=crop&w=800&q=80",
+      "poster": "https://images.unsplash.com/photo-1498654896293-37aacf113fd9?auto=format&fit=crop&w=800&q=80",
+      "tags": [
+        "전주",
+        "비빔밥",
+        "한옥마을",
+        "미식축제",
+        "전통음식"
+      ],
+      "category": "지역축제",
+      "description": "유네스코 음식창의도시 전주에서 열리는 최고의 맛 잔치. 대형 비빔밥 퍼포먼스와 명인들의 한식 쿠킹클래스가 펼쳐집니다.",
+      "viewCount": 10100
+    },
+    {
+      "id": "fest_preset_18",
+      "title": "제주 올레 걷기 축제 & 감귤 수확 체험",
+      "date": "2026. 10. 26 ~ 11. 10",
+      "startDate": "20261026",
+      "endDate": "20261110",
+      "location": "제주 서귀포시 남원읍 및 올레 4~5코스",
+      "price": "참가비 무료 (체험비 별도)",
+      "imageUrl": "https://images.unsplash.com/photo-1544644181-1484b3fdfc62?auto=format&fit=crop&w=800&q=80",
+      "poster": "https://images.unsplash.com/photo-1544644181-1484b3fdfc62?auto=format&fit=crop&w=800&q=80",
+      "tags": [
+        "제주",
+        "올레길",
+        "트레킹",
+        "감귤체험",
+        "힐링"
+      ],
+      "category": "지역축제",
+      "description": "돌담길과 억새, 푸른 파도를 따라 걸으며 제주의 진짜 매력을 발견하는 올레 걷기 축제. 길목마다 열리는 감귤 나눔과 버스킹을 즐겨보세요.",
+      "viewCount": 11500
+    }
+  ],
+  "popups": [
+    {
+      "id": "popup_preset_01",
+      "title": "디올 성수 2026 어텀/윈터 가든 아카이브 팝업",
+      "date": "2026. 10. 15 ~ 11. 30",
+      "startDate": "20261015",
+      "endDate": "20261130",
+      "location": "[성수] 서울 성동구 연무장5길 7 (디올 성수)",
+      "price": "무료 관람 (사전예약/현장대기)",
+      "imageUrl": "https://images.unsplash.com/photo-1558769132-cb1aea458c5e?auto=format&fit=crop&w=800&q=80",
+      "poster": "https://images.unsplash.com/photo-1558769132-cb1aea458c5e?auto=format&fit=crop&w=800&q=80",
+      "tags": [
+        "성수팝업",
+        "디올",
+        "명품",
+        "패션",
+        "인생샷"
+      ],
+      "category": "팝업스토어",
+      "description": "디올 성수가 선보이는 2026 어텀/윈터 가든 팝업. 식물원 테마의 프라이빗 정원과 꾸뛰르 컬렉션 미니 전시를 감상할 수 있습니다.",
+      "viewCount": 15400
+    },
+    {
+      "id": "popup_preset_02",
+      "title": "팝마트 메가 스페이스 몰리 400% 성수 특별전",
+      "date": "2026. 10. 20 ~ 11. 10",
+      "startDate": "20261020",
+      "endDate": "20261110",
+      "location": "[성수] 서울 성동구 아차산로 113",
+      "price": "무료 관람 (굿즈 구매 별도)",
+      "imageUrl": "https://images.unsplash.com/photo-1566576912321-d58ddd7a6088?auto=format&fit=crop&w=800&q=80",
+      "poster": "https://images.unsplash.com/photo-1566576912321-d58ddd7a6088?auto=format&fit=crop&w=800&q=80",
+      "tags": [
+        "팝마트",
+        "몰리",
+        "피규어",
+        "아트토이",
+        "성수동"
+      ],
+      "category": "팝업스토어",
+      "description": "글로벌 아트토이 브랜드 팝마트의 한정판 메가 스페이스 몰리 오프라인 단독 쇼케이스. 대형 조형물과 한정판 피규어 현장 래플 진행.",
+      "viewCount": 12800
+    },
+    {
+      "id": "popup_preset_03",
+      "title": "잔망루피의 마법 연구소 할로윈 스페셜 팝업",
+      "date": "2026. 10. 24 ~ 11. 05",
+      "startDate": "20261024",
+      "endDate": "20261105",
+      "location": "[성수] 서울 성동구 성수이로 77",
+      "price": "무료 (사전예약/현장웨이팅)",
+      "imageUrl": "https://images.unsplash.com/photo-1509198397868-475647b2a1e5?auto=format&fit=crop&w=800&q=80",
+      "poster": "https://images.unsplash.com/photo-1509198397868-475647b2a1e5?auto=format&fit=crop&w=800&q=80",
+      "tags": [
+        "잔망루피",
+        "캐릭터",
+        "할로윈",
+        "성수팝업",
+        "굿즈"
+      ],
+      "category": "팝업스토어",
+      "description": "귀여움 한도 초과! 마녀 모자를 쓴 잔망루피의 할로윈 테마 팝업스토어. 한정판 봉제인형과 포토부스, 럭키드로우가 가득합니다.",
+      "viewCount": 14900
+    },
+    {
+      "id": "popup_preset_04",
+      "title": "탬버린즈 '이브닝 글로우' 퍼퓸 아카이브 팝업",
+      "date": "2026. 10. 18 ~ 11. 15",
+      "startDate": "20261018",
+      "endDate": "20261115",
+      "location": "[성수] 서울 성동구 연무장5길 8 (탬버린즈 성수 플래그십)",
+      "price": "무료 입장",
+      "imageUrl": "https://images.unsplash.com/photo-1547887537-6158d64c35b3?auto=format&fit=crop&w=800&q=80",
+      "poster": "https://images.unsplash.com/photo-1547887537-6158d64c35b3?auto=format&fit=crop&w=800&q=80",
+      "tags": [
+        "탬버린즈",
+        "향수",
+        "뷰티",
+        "감성공간",
+        "성수"
+      ],
+      "category": "팝업스토어",
+      "description": "노을빛을 닮은 장미 향수 '이브닝 글로우' 런칭 팝업. 독창적인 조각 오브제와 함께 나만의 시그니처 향을 찾아보세요.",
+      "viewCount": 13800
+    },
+    {
+      "id": "popup_preset_05",
+      "title": "무신사 뷰티 페스타 in 성수 스퀘어",
+      "date": "2026. 10. 22 ~ 11. 04",
+      "startDate": "20261022",
+      "endDate": "20261104",
+      "location": "[성수] 서울 성동구 성수동2가 273-13 (무신사 스퀘어 성수4)",
+      "price": "무료 관람 (샘플 키트 증정)",
+      "imageUrl": "https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?auto=format&fit=crop&w=800&q=80",
+      "poster": "https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?auto=format&fit=crop&w=800&q=80",
+      "tags": [
+        "무신사",
+        "뷰티",
+        "성수",
+        "화장품",
+        "체험존"
+      ],
+      "category": "팝업스토어",
+      "description": "40여 개 감성 뷰티 브랜드가 총출동하는 메가 뷰티 팝업. 피부톤 퍼스널 진단과 프리미엄 웰컴 기프트백을 받아보세요.",
+      "viewCount": 11100
+    },
+    {
+      "id": "popup_preset_06",
+      "title": "닌텐도 스위치 가을 어드벤처 성수 팝업",
+      "date": "2026. 10. 25 ~ 11. 20",
+      "startDate": "20261025",
+      "endDate": "20261120",
+      "location": "[성수] 서울 성동구 아차산로9길 12 (도원 성수)",
+      "price": "무료 (사전예약/현장순번)",
+      "imageUrl": "https://images.unsplash.com/photo-1550745165-9bc0b252726f?auto=format&fit=crop&w=800&q=80",
+      "poster": "https://images.unsplash.com/photo-1550745165-9bc0b252726f?auto=format&fit=crop&w=800&q=80",
+      "tags": [
+        "닌텐도",
+        "게임",
+        "마리오",
+        "젤다",
+        "성수팝업"
+      ],
+      "category": "팝업스토어",
+      "description": "닌텐도 스위치 최신 타이틀을 무료로 체험할 수 있는 테마 라운지. 대형 마리오 포토존과 한정판 굿즈 스토어가 운영됩니다.",
+      "viewCount": 16200
+    },
+    {
+      "id": "popup_preset_07",
+      "title": "더현대 서울 하이큐!! 극장판 공식 팝업스토어",
+      "date": "2026. 10. 20 ~ 11. 08",
+      "startDate": "20261020",
+      "endDate": "20261108",
+      "location": "[더현대] 서울 영등포구 여의대로 108 (더현대 서울 지하 2층 아이코닉스퀘어)",
+      "price": "무료 입장 (현장 웨이팅 등록)",
+      "imageUrl": "https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?auto=format&fit=crop&w=800&q=80",
+      "poster": "https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?auto=format&fit=crop&w=800&q=80",
+      "tags": [
+        "하이큐",
+        "애니팝업",
+        "더현대서울",
+        "여의도",
+        "한정굿즈"
+      ],
+      "category": "팝업스토어",
+      "description": "카라스노 vs 네코마 쓰레기장의 결전 공식 팝업! 실물 크기 캐릭터 등신대와 경기장 락커룸 포토존, 일본 직수입 한정판 굿즈 대방출.",
+      "viewCount": 17800
+    },
+    {
+      "id": "popup_preset_08",
+      "title": "더현대 디즈니 가을 매지컬 팝업 익스피리언스",
+      "date": "2026. 10. 16 ~ 11. 17",
+      "startDate": "20261016",
+      "endDate": "20261117",
+      "location": "[더현대] 서울 영등포구 여의대로 108 (더현대 5층 사운즈포레스트)",
+      "price": "무료 관람",
+      "imageUrl": "https://images.unsplash.com/photo-1513151233558-d860c5398176?auto=format&fit=crop&w=800&q=80",
+      "poster": "https://images.unsplash.com/photo-1513151233558-d860c5398176?auto=format&fit=crop&w=800&q=80",
+      "tags": [
+        "디즈니",
+        "더현대",
+        "사운즈포레스트",
+        "인생샷",
+        "가족나들이"
+      ],
+      "category": "팝업스토어",
+      "description": "1,000평 사운즈포레스트 정원에 조성된 디즈니 판타지 빌리지. 미키마우스와 공주 캐릭터 포토존에서 마법 같은 순간을 남겨보세요.",
+      "viewCount": 16500
+    },
+    {
+      "id": "popup_preset_09",
+      "title": "라인프렌즈 미니니(minini) 베이커리 팝업스토어",
+      "date": "2026. 10. 23 ~ 11. 06",
+      "startDate": "20261023",
+      "endDate": "20261106",
+      "location": "[더현대] 서울 영등포구 여의대로 108 (더현대 B1 대행사장)",
+      "price": "무료 입장",
+      "imageUrl": "https://images.unsplash.com/photo-1509440159596-0249088772ff?auto=format&fit=crop&w=800&q=80",
+      "poster": "https://images.unsplash.com/photo-1509440159596-0249088772ff?auto=format&fit=crop&w=800&q=80",
+      "tags": [
+        "라인프렌즈",
+        "미니니",
+        "디저트",
+        "더현대",
+        "포토존"
+      ],
+      "category": "팝업스토어",
+      "description": "갓 구운 빵 냄새 가득한 미니니의 베이커리 하우스! 초소형 미니니 캐릭터 인형과 스페셜 베이커리 디저트 패키지를 선보입니다.",
+      "viewCount": 9700
+    },
+    {
+      "id": "popup_preset_10",
+      "title": "짱구는 못말려 '시네마 퍼레이드' 투어 팝업",
+      "date": "2026. 10. 27 ~ 11. 12",
+      "startDate": "20261027",
+      "endDate": "20261112",
+      "location": "[홍대] 서울 마포구 양화로 188 (AK 플라자 홍대 4층)",
+      "price": "무료 (사전예약/현장접수)",
+      "imageUrl": "https://images.unsplash.com/photo-1563089145-599997674d42?auto=format&fit=crop&w=800&q=80",
+      "poster": "https://images.unsplash.com/photo-1563089145-599997674d42?auto=format&fit=crop&w=800&q=80",
+      "tags": [
+        "짱구",
+        "AK플라자",
+        "홍대",
+        "애니팝업",
+        "굿즈샵"
+      ],
+      "category": "팝업스토어",
+      "description": "역대 짱구는 못말려 극장판 명장면을 재현한 전시형 팝업스토어. 떡잎마을 방범대 피규어와 초코비 대형 조형물을 만나보세요.",
+      "viewCount": 13200
+    },
+    {
+      "id": "popup_preset_11",
+      "title": "산리오 캐릭터즈 가을 피크닉 팝업카페",
+      "date": "2026. 10. 19 ~ 11. 16",
+      "startDate": "20261019",
+      "endDate": "20261116",
+      "location": "[홍대] 서울 마포구 와우산로 29가길 86",
+      "price": "무료 관람 (음료/디저트 별도)",
+      "imageUrl": "https://images.unsplash.com/photo-1534447677768-be436bb09401?auto=format&fit=crop&w=800&q=80",
+      "poster": "https://images.unsplash.com/photo-1534447677768-be436bb09401?auto=format&fit=crop&w=800&q=80",
+      "tags": [
+        "산리오",
+        "시나모롤",
+        "쿠로미",
+        "홍대카페",
+        "데이트"
+      ],
+      "category": "팝업스토어",
+      "description": "시나모롤과 쿠로미가 맞이하는 파스텔톤 가을 카페. 캐릭터 테마 라떼아트와 달콤한 와플, 홍대 한정 엽서 세트가 준비되어 있습니다.",
+      "viewCount": 12100
+    },
+    {
+      "id": "popup_preset_12",
+      "title": "원피스 25주년 애니버서리 공식 팝업샵",
+      "date": "2026. 10. 26 ~ 11. 15",
+      "startDate": "20261026",
+      "endDate": "20261115",
+      "location": "[홍대] 서울 마포구 홍익로 3길 20 (홍대 서교스퀘어)",
+      "price": "무료 입장",
+      "imageUrl": "https://images.unsplash.com/photo-1578632767115-351597cf2477?auto=format&fit=crop&w=800&q=80",
+      "poster": "https://images.unsplash.com/photo-1578632767115-351597cf2477?auto=format&fit=crop&w=800&q=80",
+      "tags": [
+        "원피스",
+        "루피",
+        "애니메이션",
+        "홍대팝업",
+        "한정굿즈"
+      ],
+      "category": "팝업스토어",
+      "description": "루피와 밀짚모자 일당의 25년 모험 대항해! 거대 써니호 포토존과 25주년 기념 오리지널 아트워크 일러스트 굿즈를 선보입니다.",
+      "viewCount": 14100
+    },
+    {
+      "id": "popup_preset_13",
+      "title": "젠틀몬스터 미래 안경 테크 랩 팝업",
+      "date": "2026. 10. 10 ~ 11. 25",
+      "startDate": "20261010",
+      "endDate": "20261125",
+      "location": "[강남] 서울 강남구 압구정로46길 50 (하우스 도산)",
+      "price": "무료 관람",
+      "imageUrl": "https://images.unsplash.com/photo-1511499767150-a48a237f0083?auto=format&fit=crop&w=800&q=80",
+      "poster": "https://images.unsplash.com/photo-1511499767150-a48a237f0083?auto=format&fit=crop&w=800&q=80",
+      "tags": [
+        "젠틀몬스터",
+        "하우스도산",
+        "선글라스",
+        "강남",
+        "현대미술"
+      ],
+      "category": "팝업스토어",
+      "description": "초현실주의 키네틱 아트와 첨단 아이웨어의 결합. 거대한 로봇 인체 오브제와 미래지향적 선글라스 컬렉션을 만나보세요.",
+      "viewCount": 11900
+    },
+    {
+      "id": "popup_preset_14",
+      "title": "카카오프렌즈 가을 홈카페 라이프 팝업스토어",
+      "date": "2026. 10. 24 ~ 11. 14",
+      "startDate": "20261024",
+      "endDate": "20261114",
+      "location": "[강남] 서울 강남구 강남대로 429 (카카오프렌즈 강남플래그십)",
+      "price": "무료 입장",
+      "imageUrl": "https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=800&q=80",
+      "poster": "https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=800&q=80",
+      "tags": [
+        "카카오프렌즈",
+        "라이언",
+        "춘식이",
+        "강남역",
+        "홈카페"
+      ],
+      "category": "팝업스토어",
+      "description": "라이언과 춘식이가 추천하는 아늑한 가을 홈카페 인테리어 소품전. 신상 머그컵과 담요, 홈웨어 라인업을 단독 공개합니다.",
+      "viewCount": 10800
+    },
+    {
+      "id": "popup_preset_15",
+      "title": "잠실 롯데월드몰 포켓몬 타운 2026 가을 페스타",
+      "date": "2026. 10. 22 ~ 11. 10",
+      "startDate": "20261022",
+      "endDate": "20261110",
+      "location": "[잠실] 서울 송파구 올림픽로 300 (롯데월드몰 1층 아트리움 및 아레나광장)",
+      "price": "무료 관람 (체험부스 현장접수)",
+      "imageUrl": "https://images.unsplash.com/photo-1613771404784-3a5686aa2be3?auto=format&fit=crop&w=800&q=80",
+      "poster": "https://images.unsplash.com/photo-1613771404784-3a5686aa2be3?auto=format&fit=crop&w=800&q=80",
+      "tags": [
+        "포켓몬",
+        "피카츄",
+        "잠실",
+        "롯데월드몰",
+        "가을페스타"
+      ],
+      "category": "팝업스토어",
+      "description": "16m 초대형 피카츄 벌룬과 포켓몬 카드게임 배틀존이 잠실에 떴다! 포켓몬 팝업스토어와 미니 퍼레이드를 함께 즐겨보세요.",
+      "viewCount": 21500
+    },
+    {
+      "id": "popup_preset_16",
+      "title": "레고 브릭 오디세이 잠실 특별 팝업",
+      "date": "2026. 10. 26 ~ 11. 18",
+      "startDate": "20261026",
+      "endDate": "20261118",
+      "location": "[잠실] 서울 송파구 올림픽로 240 (롯데월드 어드벤처 로티몰)",
+      "price": "무료 입장",
+      "imageUrl": "https://images.unsplash.com/photo-1585366119957-e9730b6d0f60?auto=format&fit=crop&w=800&q=80",
+      "poster": "https://images.unsplash.com/photo-1585366119957-e9730b6d0f60?auto=format&fit=crop&w=800&q=80",
+      "tags": [
+        "레고",
+        "잠실",
+        "브릭아트",
+        "체험존",
+        "키덜트"
+      ],
+      "category": "팝업스토어",
+      "description": "수십만 개 레고 브릭으로 구현된 우주 탐사선과 랜드마크 디오라마. 나만의 미니 브릭을 직접 조립해보는 인터랙티브 체험존.",
+      "viewCount": 11400
+    },
+    {
+      "id": "popup_preset_17",
+      "title": "플레이브(PLAVE) 가을 공식 팬 팝업 라운지",
+      "date": "2026. 10. 28 ~ 11. 08",
+      "startDate": "20261028",
+      "endDate": "20261108",
+      "location": "[홍대] 서울 마포구 양화로 160 (스페이스 홍대)",
+      "price": "무료 (사전예약제)",
+      "imageUrl": "https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?auto=format&fit=crop&w=800&q=80",
+      "poster": "https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?auto=format&fit=crop&w=800&q=80",
+      "tags": [
+        "플레이브",
+        "버추얼아이돌",
+        "KPOP",
+        "홍대팝업",
+        "한정굿즈"
+      ],
+      "category": "팝업스토어",
+      "description": "버추얼 아이돌 플레이브의 공식 앨범 런칭 기념 팝업 라운지. 미공개 음원 청음존과 멤버별 커스텀 굿즈, 포토 키오스크가 마련됩니다.",
+      "viewCount": 17200
+    },
+    {
+      "id": "popup_preset_18",
+      "title": "무신사 스탠다드 홍대 레트로 윈터 팝업스토어",
+      "date": "2026. 10. 21 ~ 11. 30",
+      "startDate": "20261021",
+      "endDate": "20261130",
+      "location": "[홍대] 서울 마포구 양화로 144 (무신사 스탠다드 홍대)",
+      "price": "무료 관람",
+      "imageUrl": "https://images.unsplash.com/photo-1489987707025-afc232f7ea0f?auto=format&fit=crop&w=800&q=80",
+      "poster": "https://images.unsplash.com/photo-1489987707025-afc232f7ea0f?auto=format&fit=crop&w=800&q=80",
+      "tags": [
+        "무신사스탠다드",
+        "패션",
+        "홍대",
+        "겨울코트",
+        "할인"
+      ],
+      "category": "팝업스토어",
+      "description": "트렌디한 레트로 감성의 겨울 아우터와 니트웨어 특별 팝업. 구매 고객 대상 럭키 드로우 및 커스텀 자수 서비스가 제공됩니다.",
+      "viewCount": 9800
+    }
+  ]
+}

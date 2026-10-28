@@ -1,5 +1,4 @@
-export const dynamic = 'force-dynamic'
-export const revalidate = 0
+export const revalidate = 43200 // 12시간 Next.js ISR 캐시
 
 import { Suspense } from 'react'
 import { EventsClient } from '../events/events-client'

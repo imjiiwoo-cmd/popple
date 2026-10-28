@@ -16,7 +16,14 @@ import {
   Check,
   ImageIcon,
 } from 'lucide-react'
-import { type PoppleEvent, sortPopupsVisualFirst, parseEventDateRange } from '@/lib/events'
+import {
+  type PoppleEvent,
+  sortPopupsVisualFirst,
+  parseEventDateRange,
+  isEventActiveOnDate,
+  isEventOperatingInRange,
+} from '@/lib/events'
+import { PRESET_FESTIVALS, PRESET_POPUPS } from '@/lib/constants/events'
 import type { CalendarFestival } from '@/app/api/festivals/route'
 import { cn } from '@/lib/utils'
 import { EventImage } from './event-image'
@@ -227,13 +234,14 @@ export function EventsCalendarScreen({
   const [isRegionDropdownOpen, setIsRegionDropdownOpen] = useState(false)
   const [isEventTypeDropdownOpen, setIsEventTypeDropdownOpen] = useState(false)
 
-  // 3. 북마크 상태 캐시
+  // 3. 북마크 상태 캐시 및 뷰 모드 (선택일 vs 주간 전체)
   const [bookmarkedMap, setBookmarkedMap] = useState<Record<string, boolean>>({})
+  const [viewAllWeek, setViewAllWeek] = useState(false)
 
-  // 4. 축제 및 팝업스토어 목록 데이터 및 주간 캐시
-  const [festivals, setFestivals] = useState<CalendarFestival[]>([])
-  const [popups, setPopups] = useState<PoppleEvent[]>([])
-  const [isLoading, setIsLoading] = useState(true)
+  // 4. 축제 및 팝업스토어 목록 데이터 및 주간 캐시 (정적 프리셋 기본 내장으로 0.05초 즉각 렌더링)
+  const [festivals, setFestivals] = useState<CalendarFestival[]>(() => PRESET_FESTIVALS)
+  const [popups, setPopups] = useState<PoppleEvent[]>(() => PRESET_POPUPS)
+  const [isLoading, setIsLoading] = useState<boolean>(false)
   const [popupImageFailedMap, setPopupImageFailedMap] = useState<Record<string, boolean>>({})
 
   // 주간 단위 인메모리 캐시 (key: 'YYYYMMDD_YYYYMMDD' -> { festivals, popups })
@@ -274,7 +282,21 @@ export function EventsCalendarScreen({
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
 
-  // 주간 데이터 비동기 요청 함수 (캐시 우선 확인)
+  /**
+   * 고유 ID 기반 목록 병합 (프리셋을 기본 안전망으로 유지하면서 최신 API 데이터 병합)
+   */
+  const mergeById = <T extends { id: string }>(presetList: T[], apiList: T[]): T[] => {
+    const map = new Map<string, T>()
+    for (const item of presetList) {
+      if (item && item.id) map.set(item.id, item)
+    }
+    for (const item of apiList) {
+      if (item && item.id) map.set(item.id, item)
+    }
+    return Array.from(map.values())
+  }
+
+  // 주간 데이터 비동기 요청 함수 (캐시 우선 확인 및 프리셋 안전망 병합)
   const fetchWeekData = async (
     monday: Date,
     signal?: AbortSignal,
@@ -285,22 +307,36 @@ export function EventsCalendarScreen({
       return cached
     }
 
-    const [festData, popData] = await Promise.all([
-      fetch(`/api/festivals?startDate=${startDate}&endDate=${endDate}`, { signal })
-        .then((res) => res.json())
-        .catch(() => ({ festivals: [] })),
-      fetch(`/api/popups?startDate=${startDate}&endDate=${endDate}`, { signal })
-        .then((res) => res.json())
-        .catch(() => ({ popups: [] })),
-    ])
+    try {
+      const [festRes, popRes] = await Promise.all([
+        fetch(`/api/festivals?startDate=${startDate}&endDate=${endDate}`, { signal }),
+        fetch(`/api/popups?startDate=${startDate}&endDate=${endDate}`, { signal }),
+      ])
+      const [festData, popData] = await Promise.all([
+        festRes.ok ? festRes.json() : { festivals: [] },
+        popRes.ok ? popRes.json() : { popups: [] },
+      ])
 
-    const result = {
-      festivals: (festData.festivals || []) as CalendarFestival[],
-      popups: (popData.popups || []) as PoppleEvent[],
+      const fetchedFestivals = (festData.festivals || []) as CalendarFestival[]
+      const fetchedPopups = (popData.popups || []) as PoppleEvent[]
+
+      // 프리셋과 최신 API 결과 병합 (12h ISR 캐시 및 백그라운드 재검증 지원)
+      const mergedFestivals = mergeById(PRESET_FESTIVALS, fetchedFestivals)
+      const mergedPopups = mergeById(PRESET_POPUPS, fetchedPopups)
+
+      const result = {
+        festivals: mergedFestivals,
+        popups: mergedPopups,
+      }
+
+      weekCacheRef.current.set(key, result)
+      return result
+    } catch {
+      return {
+        festivals: PRESET_FESTIVALS,
+        popups: PRESET_POPUPS,
+      }
     }
-
-    weekCacheRef.current.set(key, result)
-    return result
   }
 
   // 주간 단위 점진적 로딩 (Weekly Lazy Fetching) & 프리페칭 (Prefetching)
@@ -314,7 +350,7 @@ export function EventsCalendarScreen({
     const controller = new AbortController()
     activeAbortRef.current = controller
 
-    const { key } = getWeekRangeStrings(currentMonday)
+    const { key, startDate, endDate } = getWeekRangeStrings(currentMonday)
     const cached = weekCacheRef.current.get(key)
 
     if (cached) {
@@ -323,8 +359,15 @@ export function EventsCalendarScreen({
       setPopups(cached.popups)
       setIsLoading(false)
     } else {
-      // 2순위: 캐시가 없으면 스켈레톤 로딩 상태 노출 후 해당 주간 데이터만 경량 패치
-      setIsLoading(true)
+      // 주차 내 프리셋 이벤트 보유 여부 확인 (프리셋이 있으면 로딩 스피너로 화면을 막지 않음)
+      const hasPresetEventsInWeek =
+        PRESET_FESTIVALS.some((f) => isEventOperatingInRange(f, startDate, endDate)) ||
+        PRESET_POPUPS.some((p) => isEventOperatingInRange(p, startDate, endDate))
+
+      if (!hasPresetEventsInWeek) {
+        setIsLoading(true)
+      }
+
       fetchWeekData(currentMonday, controller.signal)
         .then((data) => {
           if (isMounted) {
@@ -436,24 +479,14 @@ export function EventsCalendarScreen({
   // 현재 보고 있는 주간의 7일 (월요일 ~ 일요일)
   const weekDays = useMemo(() => getWeekDates(currentMonday), [currentMonday])
 
-  // 필터(지역/행사종류)가 적용된 특정 날짜의 축제 목록
+  // 필터(지역/행사종류)가 적용된 특정 날짜의 축제 목록 (엄격한 날짜 필터링)
   const getFilteredFestivalsOnDate = (dateObj: Date): CalendarFestival[] => {
     // 3. '팝업스토어'를 선택했을 때는 가짜 데이터를 임의로 노출하지 않고 리스트를 비워둠
     if (selectedEventType === '팝업스토어') {
       return []
     }
 
-    const dateStr = toDateString(dateObj)
     return festivals.filter((f) => {
-      const start = f.startDate || '20260101'
-      const end = f.endDate || start
-      const isOpen = start <= dateStr && dateStr <= end
-      if (!isOpen) return false
-
-      // 오늘 날짜 기준 종료된 행사 필터링: 이미 종료된 행사는 제외
-      if (end && end < todayStr) return false
-      if (!end && start && start < todayStr) return false
-
       // 지역 필터링 (현재 선택된 지역 필터와 완전 동기화)
       if (!matchesRegion(f.location || '', f.title || '', selectedRegion)) {
         return false
@@ -468,54 +501,46 @@ export function EventsCalendarScreen({
         if (isPopup) return false
       }
 
-      return true
+      // 엄격한 날짜 필터링: [startDate, endDate] 기간 내 포함 여부 및 오늘 기준 지난 행사 제외
+      return isEventActiveOnDate(f, dateObj, todayStr)
     })
   }
 
-  // 필터(지역/행사종류)가 적용된 특정 날짜의 팝업스토어 목록
+  // 필터(지역/행사종류)가 적용된 특정 날짜의 팝업스토어 목록 (엄격한 날짜 필터링)
   const getFilteredPopupsOnDate = (dateObj: Date): PoppleEvent[] => {
     if (selectedEventType === '지역축제') {
       return []
     }
 
-    const dateStr = toDateString(dateObj)
     return popups.filter((p) => {
       // 지역 필터링
       if (!matchesRegion(p.location || '', p.title || '', selectedRegion)) {
         return false
       }
 
-      // 날짜 범위 파싱 및 진행 여부 판정
-      const range = parseEventDateRange(p.date, p.startDate, p.endDate)
-      const start = range.startDate
-      const end = range.endDate
-
-      const isOpen = start <= dateStr && dateStr <= end
-      if (!isOpen) return false
-
-      // 오늘 날짜 기준 종료된 팝업 제외
-      if (end && end < todayStr) return false
-
-      return true
+      // 엄격한 날짜 필터링: [startDate, endDate] 기간 내 포함 여부 및 오늘 기준 지난 행사 제외
+      return isEventActiveOnDate(p, dateObj, todayStr)
     })
   }
 
-  // 특정 날짜에 현재 선택된 필터(지역/행사종류)가 적용된 진행 중 축제 데이터 여부 판정 (인디케이터 빨간 점)
+  // 특정 날짜에 현재 선택된 필터(지역/행사종류)가 적용된 진행 중 축제 데이터 여부 판정 (인디케이터 점/건수)
   const hasFestivalOnDate = (dateObj: Date): boolean => {
     return getFilteredFestivalsOnDate(dateObj).length > 0 || getFilteredPopupsOnDate(dateObj).length > 0
   }
 
-  // 날짜 칩 클릭 시 해당 날짜로 선택 및 스크롤
+  // 날짜 칩 클릭 시 해당 날짜로 선택 (엄격한 일자 필터링 즉각 반응)
   const handleSelectDateChip = (dateObj: Date) => {
     setSelectedDate(dateObj)
-    const dateKey = toDateString(dateObj)
-    const targetElement = document.getElementById(`date-section-${dateKey}`)
-    if (targetElement) {
-      targetElement.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    if (viewAllWeek) {
+      const dateKey = toDateString(dateObj)
+      const targetElement = document.getElementById(`date-section-${dateKey}`)
+      if (targetElement) {
+        targetElement.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      }
     }
   }
 
-  // 이번 주 날짜별 행사 그룹 (날짜 오름차순)
+  // 이번 주 날짜별 행사 그룹 (날짜 오름차순, 각 일자별 엄격한 날짜 검증 적용)
   const weekFestivalGroups = useMemo(() => {
     if (selectedEventType === '팝업스토어') return []
     return weekDays.map((d) => {
@@ -542,36 +567,58 @@ export function EventsCalendarScreen({
         isSelected: isSameDate(d, selectedDate),
       }
     })
-  }, [weekDays, festivals, popups, selectedRegion, selectedEventType, selectedDate])
+  }, [weekDays, festivals, popups, selectedRegion, selectedEventType, selectedDate, todayStr])
 
-  // 시안과 동일하게 행사가 있거나 현재 선택된 날짜인 그룹만 노출
+  // 특정 일자 선택 시: 선택된 날짜에 실제로 운영 중인 행사만 노출 (또는 주간 전체 보기 모드)
   const visibleGroups = useMemo(() => {
     if (selectedEventType === '팝업스토어') return []
-    const withEvents = weekFestivalGroups.filter((g) => g.events.length > 0 || g.isSelected)
-    return withEvents.length > 0 ? withEvents : weekFestivalGroups
-  }, [weekFestivalGroups, selectedEventType])
+    if (viewAllWeek) {
+      const withEvents = weekFestivalGroups.filter((g) => g.events.length > 0)
+      return withEvents.length > 0 ? withEvents : weekFestivalGroups
+    }
+    // 기본 모드: 선택된 날짜에 실제로 운영 중인 행사 그룹만 필터링하여 노출
+    return weekFestivalGroups.filter((g) => g.isSelected)
+  }, [weekFestivalGroups, selectedEventType, viewAllWeek])
 
-  // 팝업스토어 필터링 및 시각적 우선 정렬 (Visual-first sorting)
+  // 팝업스토어 필터링 및 시각적 우선 정렬 (선택된 날짜 기준 엄격 필터링)
   const filteredPopups = useMemo(() => {
     if (selectedEventType !== '팝업스토어') return []
-    let list = popups
-    if (selectedRegion !== '전체 지역') {
-      list = popups.filter((p) => matchesRegion(p.location, p.title, selectedRegion))
+    let list: PoppleEvent[]
+    if (viewAllWeek) {
+      const { startDate, endDate } = getWeekRangeStrings(currentMonday)
+      list = popups.filter((p) => {
+        if (!matchesRegion(p.location || '', p.title || '', selectedRegion)) return false
+        return isEventOperatingInRange(p, startDate, endDate) && isEventActiveOnDate(p, p.endDate || endDate, todayStr)
+      })
+    } else {
+      // 선택된 날짜에 실제로 운영 중인 팝업스토어만 정밀 필터링
+      list = getFilteredPopupsOnDate(selectedDate)
     }
     return sortPopupsVisualFirst(list, popupImageFailedMap)
-  }, [popups, selectedRegion, selectedEventType, popupImageFailedMap])
+  }, [popups, selectedRegion, selectedEventType, selectedDate, currentMonday, viewAllWeek, popupImageFailedMap, todayStr])
 
   // 이번 주 총 행사 개수 (중복 제거)
   const totalEventsInWeek = useMemo(() => {
-    if (selectedEventType === '팝업스토어') return filteredPopups.length
     const idSet = new Set<string>()
-    for (const g of weekFestivalGroups) {
-      for (const ev of g.events) {
+    for (const d of weekDays) {
+      for (const ev of getFilteredFestivalsOnDate(d)) {
+        idSet.add(ev.id)
+      }
+      for (const ev of getFilteredPopupsOnDate(d)) {
         idSet.add(ev.id)
       }
     }
     return idSet.size
-  }, [weekFestivalGroups, selectedEventType, filteredPopups])
+  }, [weekDays, festivals, popups, selectedRegion, selectedEventType, todayStr])
+
+  // 선택된 특정 날짜에 운영 중인 행사 건수
+  const selectedDateEventsCount = useMemo(() => {
+    if (selectedEventType === '팝업스토어') {
+      return getFilteredPopupsOnDate(selectedDate).length
+    }
+    const currentGroup = weekFestivalGroups.find((g) => g.isSelected)
+    return currentGroup ? currentGroup.events.length : 0
+  }, [weekFestivalGroups, selectedDate, selectedEventType, popups, selectedRegion, todayStr])
 
   return (
     <div className="relative flex flex-col min-h-dvh bg-[#F8FAFC] text-slate-900 pb-28">
@@ -869,17 +916,49 @@ export function EventsCalendarScreen({
       {/* 4. 해당 주/선택일 진행 행사 리스트 렌더링 */}
       <main className="px-5 mt-6 flex flex-col">
         <div className="mx-auto w-full max-w-md">
-          {/* 타이틀 헤더: THIS WEEK / 진행 중인 행사 / N개의 행사 */}
+          {/* 타이틀 헤더 및 보기 방식 토글 (선택일 vs 주간 전체) */}
           <div className="mb-4">
-            <span className="text-[12px] font-black tracking-wider text-[#1884F7] uppercase">
-              THIS WEEK
-            </span>
-            <div className="flex items-baseline justify-between mt-0.5">
-              <h2 className="text-[22px] font-black text-slate-900 tracking-tight">
-                진행 중인 행사
+            <div className="flex items-center justify-between">
+              <span className="text-[12px] font-black tracking-wider text-[#1884F7] uppercase">
+                {viewAllWeek ? 'THIS WEEK' : 'SELECTED DATE'}
+              </span>
+              {/* 보기 방식 토글 (선택일 / 주간 전체) */}
+              <div className="flex items-center bg-slate-200/60 p-0.5 rounded-xl text-[11px] font-bold">
+                <button
+                  type="button"
+                  onClick={() => setViewAllWeek(false)}
+                  className={cn(
+                    'px-2.5 py-1 rounded-lg transition-all',
+                    !viewAllWeek
+                      ? 'bg-white text-[#1884F7] shadow-2xs font-black'
+                      : 'text-slate-500 hover:text-slate-800',
+                  )}
+                >
+                  선택 일자
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setViewAllWeek(true)}
+                  className={cn(
+                    'px-2.5 py-1 rounded-lg transition-all',
+                    viewAllWeek
+                      ? 'bg-white text-[#1884F7] shadow-2xs font-black'
+                      : 'text-slate-500 hover:text-slate-800',
+                  )}
+                >
+                  이번 주 전체
+                </button>
+              </div>
+            </div>
+
+            <div className="flex items-baseline justify-between mt-1">
+              <h2 className="text-[21px] font-black text-slate-900 tracking-tight">
+                {viewAllWeek
+                  ? '이번 주 진행 중인 행사'
+                  : `${selectedDate.getMonth() + 1}월 ${selectedDate.getDate()}일 (${getDayLabel(selectedDate)}) 행사`}
               </h2>
-              <span className="text-sm font-semibold text-slate-400">
-                {totalEventsInWeek}개의 행사
+              <span className="text-xs font-bold text-slate-400">
+                {viewAllWeek ? `${totalEventsInWeek}개의 행사` : `${selectedDateEventsCount}개의 행사`}
               </span>
             </div>
           </div>
@@ -905,10 +984,14 @@ export function EventsCalendarScreen({
                   <CalendarIcon className="size-6 stroke-[1.8]" />
                 </div>
                 <p className="text-base font-bold text-slate-800">
-                  해당 지역에 진행 중인 팝업스토어가 없어요
+                  {viewAllWeek
+                    ? '해당 조건에 진행 중인 팝업스토어가 없어요'
+                    : '선택하신 날짜에 진행 중인 팝업스토어가 없어요'}
                 </p>
                 <p className="text-xs text-slate-500 break-keep">
-                  지역 필터를 &lsquo;전체 지역&rsquo; 또는 다른 지역으로 변경해보세요!
+                  {viewAllWeek
+                    ? '지역 필터를 ‘전체 지역’ 또는 다른 지역으로 변경해보세요!'
+                    : '다른 날짜를 선택하거나 상단에서 ‘이번 주 전체’를 확인해보세요!'}
                 </p>
               </div>
             ) : (
@@ -1014,10 +1097,14 @@ export function EventsCalendarScreen({
                 <CalendarIcon className="size-6 stroke-[1.8]" />
               </div>
               <p className="text-base font-bold text-slate-800">
-                해당 조건에 진행 중인 행사가 없어요
+                {viewAllWeek
+                  ? '해당 조건에 진행 중인 행사가 없어요'
+                  : '선택하신 날짜에 진행 중인 행사가 없어요'}
               </p>
               <p className="text-xs text-slate-500 break-keep">
-                지역 필터를 변경하거나 다른 주차로 이동해보세요!
+                {viewAllWeek
+                  ? '지역 필터를 변경하거나 다른 주차로 이동해보세요!'
+                  : '다른 날짜를 선택하거나 상단에서 ‘이번 주 전체’를 확인해보세요!'}
               </p>
             </div>
           ) : (

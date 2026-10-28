@@ -208,49 +208,69 @@ export function parseEventDateRange(
   startStr?: string,
   endStr?: string,
 ): { startDate: string; endDate: string } {
-  if (startStr && startStr.length === 8 && endStr && endStr.length === 8) {
-    return { startDate: startStr, endDate: endStr }
+  const cleanStart = startStr ? startStr.replace(/\D/g, '').slice(0, 8) : ''
+  const cleanEnd = endStr ? endStr.replace(/\D/g, '').slice(0, 8) : ''
+  if (cleanStart.length === 8 && cleanEnd.length === 8) {
+    return { startDate: cleanStart, endDate: cleanEnd }
   }
-  if (!dateStr) {
-    return { startDate: '20261001', endDate: '20261031' }
+  if (cleanStart.length === 8 && !cleanEnd) {
+    return { startDate: cleanStart, endDate: cleanStart }
   }
-  const numbers = dateStr.match(/\d+/g) || []
-  const n0 = numbers[0] || ''
-  const n1 = numbers[1] || ''
-  const n2 = numbers[2] || ''
-  const n3 = numbers[3] || ''
-  const n4 = numbers[4] || ''
 
-  if (numbers.length >= 5 && n0.length === 4) {
-    const yyyy = n0
-    const mm1 = n1.padStart(2, '0')
-    const dd1 = n2.padStart(2, '0')
-    const mm2 = n3.padStart(2, '0')
-    const dd2 = n4.padStart(2, '0')
-    return {
-      startDate: `${yyyy}${mm1}${dd1}`,
-      endDate: `${yyyy}${mm2}${dd2}`,
-    }
-  } else if (numbers.length >= 4 && n0.length <= 2) {
-    const yyyy = '2026'
-    const mm1 = n0.padStart(2, '0')
-    const dd1 = n1.padStart(2, '0')
-    const mm2 = n2.padStart(2, '0')
-    const dd2 = n3.padStart(2, '0')
-    return {
-      startDate: `${yyyy}${mm1}${dd1}`,
-      endDate: `${yyyy}${mm2}${dd2}`,
-    }
-  } else if (numbers.length >= 3 && n0.length === 4) {
-    const yyyy = n0
-    const mm1 = n1.padStart(2, '0')
-    const dd1 = n2.padStart(2, '0')
-    return {
-      startDate: `${yyyy}${mm1}${dd1}`,
-      endDate: `${yyyy}${mm1}${dd1}`,
+  if (!dateStr || typeof dateStr !== 'string') {
+    return { startDate: '', endDate: '' }
+  }
+
+  // 1) 2개의 완전한 YYYY.MM.DD 매칭 (예: 2026.10.01 ~ 2026.11.08)
+  const fullDates = dateStr.match(/\d{4}[.\s/-]+\d{1,2}[.\s/-]+\d{1,2}/g)
+  if (fullDates && fullDates.length >= 2) {
+    const sDigits = fullDates[0].match(/\d+/g) || []
+    const eDigits = fullDates[fullDates.length - 1].match(/\d+/g) || []
+    if (sDigits.length >= 3 && eDigits.length >= 3) {
+      const s = `${sDigits[0]}${sDigits[1].padStart(2, '0')}${sDigits[2].padStart(2, '0')}`
+      const e = `${eDigits[0]}${eDigits[1].padStart(2, '0')}${eDigits[2].padStart(2, '0')}`
+      return { startDate: s, endDate: e }
     }
   }
-  return { startDate: '20261001', endDate: '20261031' }
+
+  // 2) 1개의 완전한 YYYY.MM.DD + 구분자 이후 MM.DD (예: 2026. 10. 01 ~ 11. 08)
+  const parts = dateStr.split(/[~–—]/)
+  if (parts.length >= 2 && parts[0] && parts[1]) {
+    const sDigits = parts[0].match(/\d+/g) || []
+    const eDigits = parts[1].match(/\d+/g) || []
+    if (sDigits.length >= 3 && sDigits[0]) {
+      const yyyy = sDigits[0].length === 4 ? sDigits[0] : '2026'
+      const mm1 = (sDigits[sDigits.length - 2] || '01').padStart(2, '0')
+      const dd1 = (sDigits[sDigits.length - 1] || '01').padStart(2, '0')
+      const s = `${yyyy}${mm1}${dd1}`
+
+      if (eDigits.length >= 3 && eDigits[0] && eDigits[0].length === 4) {
+        const eY = eDigits[0]
+        const eM = (eDigits[1] || '01').padStart(2, '0')
+        const eD = (eDigits[2] || '01').padStart(2, '0')
+        return { startDate: s, endDate: `${eY}${eM}${eD}` }
+      } else if (eDigits.length >= 2 && eDigits[0] && eDigits[1]) {
+        const eM = eDigits[0].padStart(2, '0')
+        const eD = eDigits[1].padStart(2, '0')
+        return { startDate: s, endDate: `${yyyy}${eM}${eD}` }
+      }
+      return { startDate: s, endDate: s }
+    }
+  }
+
+  // 3) 단일 일자 또는 기타 형태 (예: 2026.10.28)
+  const allNums = dateStr.match(/\d+/g) || []
+  if (allNums.length >= 3 && allNums[0] && allNums[1] && allNums[2] && allNums[0].length === 4) {
+    const yyyy = allNums[0]
+    const mm = allNums[1].padStart(2, '0')
+    const dd = allNums[2].padStart(2, '0')
+    return {
+      startDate: `${yyyy}${mm}${dd}`,
+      endDate: `${yyyy}${mm}${dd}`,
+    }
+  }
+
+  return { startDate: '', endDate: '' }
 }
 
 /**
@@ -263,6 +283,51 @@ export function isEventOperatingInRange(
   rangeEnd: string,
 ): boolean {
   const range = parseEventDateRange(event.date, event.startDate, event.endDate)
+  if (!range.startDate || !range.endDate) return false
   return range.startDate <= rangeEnd && range.endDate >= rangeStart
+}
+
+/**
+ * YYYYMMDD 또는 Date 객체를 8자리 YYYYMMDD 문자열로 변환
+ */
+export function normalizeDateToYMD(d: string | Date): string {
+  if (d instanceof Date) {
+    const yyyy = d.getFullYear()
+    const mm = String(d.getMonth() + 1).padStart(2, '0')
+    const dd = String(d.getDate()).padStart(2, '0')
+    return `${yyyy}${mm}${dd}`
+  }
+  return String(d).replace(/\D/g, '').slice(0, 8)
+}
+
+/**
+ * 특정 날짜(targetDate)에 행사가 실제로 운영 중인지 엄격히 검증
+ * - targetDate: YYYYMMDD 문자열 또는 Date 객체
+ * - 오늘 기준 이미 완전히 종료된 행사(endDate < todayStr) 자동 제외
+ * - startDate <= targetDate && targetDate <= endDate 조건을 엄격히 만족해야 true
+ */
+export function isEventActiveOnDate(
+  event: { date?: string; startDate?: string; endDate?: string },
+  targetDate: string | Date,
+  todayStr?: string,
+): boolean {
+  const targetYMD = normalizeDateToYMD(targetDate)
+  if (targetYMD.length !== 8) return false
+
+  const range = parseEventDateRange(event.date, event.startDate, event.endDate)
+  const start = range.startDate
+  const end = range.endDate
+
+  if (!start || !end || start.length !== 8 || end.length !== 8) {
+    return false
+  }
+
+  // 오늘 날짜 기준 이미 완전히 종료된 행사(end < todayStr)는 제외
+  if (todayStr && end < todayStr) {
+    return false
+  }
+
+  // 대상 일자가 [start, end] 기간 내에 포함되는지 확인
+  return start <= targetYMD && targetYMD <= end
 }
 

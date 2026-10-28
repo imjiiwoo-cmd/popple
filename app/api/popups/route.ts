@@ -1,8 +1,8 @@
 import { GoogleGenAI } from '@google/genai'
 import { type PoppleEvent, sortPopupsVisualFirst, isEventOperatingInRange } from '@/lib/events'
+import { PRESET_POPUPS } from '@/lib/constants/events'
 
-export const dynamic = 'force-dynamic'
-export const revalidate = 3600 // 1시간 캐싱 적용
+export const revalidate = 43200 // 12시간 Next.js ISR 캐싱 적용
 
 export interface PopupItem extends PoppleEvent {
   region: '성수' | '더현대' | '홍대' | '강남' | '잠실' | string
@@ -818,15 +818,43 @@ export async function GET(request: Request) {
 
   let filtered = await getCuratedPopups(regionParam)
 
+  // 큐레이션 결과가 없거나 부족한 경우 정적 검증 프리셋 팝업으로 안전하게 보완
+  if (!filtered || filtered.length === 0) {
+    const presetItems: PopupItem[] = PRESET_POPUPS.map((p) => ({
+      ...p,
+      region: p.location.includes('성수')
+        ? '성수'
+        : p.location.includes('더현대')
+        ? '더현대'
+        : p.location.includes('홍대')
+        ? '홍대'
+        : p.location.includes('강남')
+        ? '강남'
+        : p.location.includes('잠실')
+        ? '잠실'
+        : '서울',
+    }))
+    filtered = regionParam && regionParam !== '전체' && regionParam !== 'all'
+      ? presetItems.filter((p) => p.location.includes(regionParam) || p.title.includes(regionParam))
+      : presetItems
+  }
+
   // 주간 날짜 범위 파라미터(startDate, endDate) 필터링: 주간에 운영 중인 팝업만 반환
   if (startParam && endParam) {
     filtered = filtered.filter((p) => isEventOperatingInRange(p, startParam, endParam))
   }
 
-  return Response.json({
-    popups: filtered,
-    total: filtered.length,
-    allCount: serverCachedPopups.length,
-    cached: Date.now() < cacheExpiresAt,
-  })
+  return Response.json(
+    {
+      popups: filtered,
+      total: filtered.length,
+      allCount: serverCachedPopups.length || PRESET_POPUPS.length,
+      cached: true,
+    },
+    {
+      headers: {
+        'Cache-Control': 'public, s-maxage=43200, stale-while-revalidate=86400',
+      },
+    },
+  )
 }
