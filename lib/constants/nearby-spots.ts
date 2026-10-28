@@ -198,7 +198,42 @@ const GANGNAM_CAFE: NearbySpot = {
   },
 }
 
-// 6. 전국/지역 공통 기본 (Fallback)
+// 6. 수원/행궁동 권역
+const SUWON_RESTAURANT: NearbySpot = {
+  id: 'spot_suwon_food',
+  category: '식당',
+  name: '[수원] 통닭거리 진미통닭 & 솥뚜껑갈비',
+  distance: '도보 4분 · 260m',
+  tag: '#수원통닭거리 #미디어아트맛집 #화성행궁',
+  imageUrl: 'https://images.unsplash.com/photo-1569718212165-3a8278d5f624?auto=format&fit=crop&w=600&q=80',
+  coupon: {
+    title: '포플러 전용 10% 할인',
+    discount: '10% OFF',
+    dday: 'D-8',
+    code: 'POPPLE-SUWON-10',
+    benefit: '식사 메뉴 2인 이상 주문 시 10% 현장 즉시 할인',
+    validUntil: '2026.11.30까지',
+  },
+}
+
+const SUWON_CAFE: NearbySpot = {
+  id: 'spot_suwon_cafe',
+  category: '카페',
+  name: '[행궁동] 정지영커피로스터즈 화홍문점',
+  distance: '도보 3분 · 210m',
+  tag: '#행궁동카페 #루프탑뷰 #스페셜티커피',
+  imageUrl: 'https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?auto=format&fit=crop&w=600&q=80',
+  coupon: {
+    title: '음료 주문 시 1,000원 할인',
+    discount: '1,000원 OFF',
+    dday: 'D-12',
+    code: 'POPPLE-JUNGJI-1K',
+    benefit: '제조 음료 주문 시 1,000원 즉시 할인',
+    validUntil: '2026.11.30까지',
+  },
+}
+
+// 7. 전국/지역 공통 기본 (Fallback)
 const DEFAULT_RESTAURANT: NearbySpot = {
   id: 'spot_default_food',
   category: '식당',
@@ -251,6 +286,9 @@ export function getNearbySpotsForEvent(location?: string, title?: string): [Near
   ) {
     return [JONGNO_RESTAURANT, JONGNO_CAFE]
   }
+  if (target.includes('수원') || target.includes('화성')) {
+    return [SUWON_RESTAURANT, SUWON_CAFE]
+  }
   if (
     target.includes('잠실') ||
     target.includes('송파') ||
@@ -280,3 +318,80 @@ export function getNearbySpotsForEvent(location?: string, title?: string): [Near
 
   return [DEFAULT_RESTAURANT, DEFAULT_CAFE]
 }
+
+export interface PartnershipCouponSpot extends NearbySpot {
+  linkedEventTitle: string
+  linkedEventId: string
+  area: string
+  connectionText: string
+}
+
+/**
+ * 마이페이지 및 상생 제휴 혜택 모아보기에 노출할 대표 상생 쿠폰 목록
+ */
+export const ALL_PARTNERSHIP_SPOTS: PartnershipCouponSpot[] = [
+  {
+    ...SEONGSU_CAFE,
+    name: '[성수] 대림창고 갤러리카페',
+    linkedEventTitle: '디올 성수 2026 어텀/윈터 가든 아카이브 팝업',
+    linkedEventId: 'popup_preset_01',
+    area: '성수',
+    connectionText: '디올 성수 도보 4분',
+  },
+  {
+    ...SEONGSU_RESTAURANT,
+    name: '[성수] 소문난성수감자탕',
+    linkedEventTitle: '디올 성수 2026 어텀/윈터 가든 아카이브 팝업',
+    linkedEventId: 'popup_preset_01',
+    area: '성수',
+    connectionText: '디올 성수 도보 3분',
+  },
+  {
+    ...SUWON_RESTAURANT,
+    name: '[수원] 통닭거리 진미통닭 & 솥뚜껑갈비',
+    linkedEventTitle: '수원화성 미디어아트 & 가을 문화제',
+    linkedEventId: 'fest_preset_06',
+    area: '수원/행궁동',
+    connectionText: '수원화성 도보 4분',
+  },
+  {
+    ...SUWON_CAFE,
+    name: '[행궁동] 정지영커피로스터즈 화홍문점',
+    linkedEventTitle: '수원화성 미디어아트 & 가을 문화제',
+    linkedEventId: 'fest_preset_06',
+    area: '수원/행궁동',
+    connectionText: '수원화성 도보 3분',
+  },
+  {
+    ...JONGNO_RESTAURANT,
+    name: '[종로] 토속촌 삼계탕 본점',
+    linkedEventTitle: '경복궁 가을 야간특별관람',
+    linkedEventId: 'fest_preset_01',
+    area: '종로/서촌',
+    connectionText: '경복궁 도보 5분',
+  },
+  {
+    ...JONGNO_CAFE,
+    name: '[서촌] 통인스윗 에그타르트 & 커피',
+    linkedEventTitle: '경복궁 가을 야간특별관람',
+    linkedEventId: 'fest_preset_01',
+    area: '종로/서촌',
+    connectionText: '경복궁 도보 3분',
+  },
+  {
+    ...HONGDAE_CAFE,
+    name: '[홍대] 테일러커피 서교본점',
+    linkedEventTitle: '서울 하늘공원 은빛 억새 페스티벌',
+    linkedEventId: 'fest_preset_04',
+    area: '홍대/마포',
+    connectionText: '하늘공원 & 홍대 도보 3분',
+  },
+  {
+    ...JAMSIL_RESTAURANT,
+    name: '[송리단길] 다운타우너 잠실',
+    linkedEventTitle: '잠실 롯데월드몰 팝업 & 석촌호수 페스타',
+    linkedEventId: 'fest_preset_05',
+    area: '잠실/송파',
+    connectionText: '석촌호수 도보 4분',
+  },
+]

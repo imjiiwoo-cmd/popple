@@ -26,6 +26,8 @@ import {
   LogIn,
   LogOut,
   Mail,
+  Tag,
+  ExternalLink,
 } from 'lucide-react'
 import type { PoppleEvent } from '@/lib/events'
 import { MOCK_EVENTS } from '@/lib/events'
@@ -52,6 +54,12 @@ import {
 } from '@/lib/community'
 import { MiniPhotoCalendar } from './mini-photo-calendar'
 import { getUserCoupons } from '@/lib/coupons'
+import {
+  ALL_PARTNERSHIP_SPOTS,
+  type PartnershipCouponSpot,
+  type NearbySpot,
+} from '@/lib/constants/nearby-spots'
+import { PRESET_FESTIVALS, PRESET_POPUPS } from '@/lib/constants/events'
 
 interface MyScreenProps {
   onOpenHome: () => void
@@ -112,6 +120,74 @@ export function MyScreen({
   const profileFileInputRef = useRef<HTMLInputElement | null>(null)
   const diaryFileInputRef = useRef<HTMLInputElement | null>(null)
   const diaryCameraInputRef = useRef<HTMLInputElement | null>(null)
+
+  // 5. 상생 제휴 혜택 모달 및 가상 쿠폰 상태
+  const [isPartnershipModalOpen, setIsPartnershipModalOpen] = useState(false)
+  const [selectedCouponSpot, setSelectedCouponSpot] = useState<NearbySpot | null>(null)
+  const [usedCouponCodes, setUsedCouponCodes] = useState<Record<string, boolean>>({})
+  const [toastMessage, setToastMessage] = useState<string | null>(null)
+  const [partnershipAreaFilter, setPartnershipAreaFilter] = useState<string>('all')
+
+  useEffect(() => {
+    try {
+      const savedCoupons = localStorage.getItem('popple_used_coupons')
+      if (savedCoupons) {
+        setUsedCouponCodes(JSON.parse(savedCoupons))
+      }
+    } catch {
+      // ignore
+    }
+  }, [])
+
+  const showToast = (msg: string) => {
+    setToastMessage(msg)
+    setTimeout(() => {
+      setToastMessage((prev) => (prev === msg ? null : prev))
+    }, 2500)
+  }
+
+  const handleUseCoupon = (code: string) => {
+    const nextMap = { ...usedCouponCodes, [code]: true }
+    setUsedCouponCodes(nextMap)
+    try {
+      localStorage.setItem('popple_used_coupons', JSON.stringify(nextMap))
+    } catch {
+      // ignore
+    }
+    showToast('쿠폰이 사용 처리되었습니다! ✨')
+  }
+
+  const handleNavigateToEvent = (spot: PartnershipCouponSpot) => {
+    const found =
+      PRESET_POPUPS.find(
+        (e) => e.id === spot.linkedEventId || (spot.linkedEventTitle && e.title.includes(spot.linkedEventTitle.slice(0, 4))),
+      ) ||
+      PRESET_FESTIVALS.find(
+        (e) => e.id === spot.linkedEventId || (spot.linkedEventTitle && e.title.includes(spot.linkedEventTitle.slice(0, 4))),
+      )
+
+    const eventToSelect: PoppleEvent = found
+      ? found
+      : ({
+          id: spot.linkedEventId,
+          title: spot.linkedEventTitle,
+          location: spot.area,
+          category: spot.linkedEventTitle.includes('팝업') ? '팝업스토어' : '지역축제',
+          imageUrl: spot.imageUrl,
+          poster: spot.imageUrl,
+          date: '2026. 10. 15 ~ 11. 30',
+          tags: [spot.area, spot.category],
+        } as PoppleEvent)
+
+    setIsPartnershipModalOpen(false)
+    setSelectedCouponSpot(null)
+    onSelectEvent(eventToSelect)
+  }
+
+  const filteredPartnershipSpots = ALL_PARTNERSHIP_SPOTS.filter((spot) => {
+    if (partnershipAreaFilter === 'all') return true
+    return spot.area.includes(partnershipAreaFilter) || spot.name.includes(partnershipAreaFilter)
+  })
 
   // 데이터 로드
   useEffect(() => {
@@ -820,18 +896,30 @@ export function MyScreen({
             </div>
           </button>
 
-          {/* 지역 상생 제휴 혜택 안내 뱃지 (요건 4) */}
-          <div className="rounded-2xl border border-emerald-100 bg-emerald-50/70 p-3 flex items-center justify-between text-xs text-emerald-800">
-            <div className="flex items-center gap-2">
-              <span className="text-base">🌱</span>
-              <span className="font-semibold">
-                지역 상생 제휴 혜택이 곧 추가될 예정입니다
-              </span>
+          {/* [개편] 행사장 주변 지역 상생 혜택 모아보기 배너 */}
+          <button
+            type="button"
+            onClick={() => setIsPartnershipModalOpen(true)}
+            className="w-full text-left rounded-2xl border border-emerald-200/80 bg-gradient-to-r from-emerald-50 via-teal-50 to-emerald-50 p-3.5 flex items-center justify-between text-xs text-emerald-950 hover:shadow-md transition-all active:scale-[0.99] group cursor-pointer shadow-2xs"
+          >
+            <div className="flex items-center gap-2.5 min-w-0 pr-2">
+              <span className="text-xl shrink-0 p-1.5 rounded-xl bg-white/90 shadow-2xs">🌱</span>
+              <div className="min-w-0">
+                <span className="font-bold text-slate-900 group-hover:text-emerald-700 transition-colors block truncate text-xs sm:text-[13px]">
+                  행사장 주변 지역 상생 혜택 모아보기
+                </span>
+                <span className="text-[11px] text-slate-500 font-medium truncate block mt-0.5">
+                  성수·수원 등 축제 인근 맛집·카페 할인 쿠폰
+                </span>
+              </div>
             </div>
-            <span className="text-[10px] font-bold bg-emerald-200/80 text-emerald-900 px-2 py-0.5 rounded-full">
-              COMING SOON
-            </span>
-          </div>
+            <div className="flex items-center gap-1 shrink-0">
+              <span className="text-[10px] font-bold bg-emerald-600 text-white px-2 py-0.5 rounded-full shadow-2xs">
+                {ALL_PARTNERSHIP_SPOTS.length}개 진행 중
+              </span>
+              <ChevronRight className="size-4 text-emerald-600 group-hover:translate-x-0.5 transition-transform" />
+            </div>
+          </button>
         </section>
       </main>
 
@@ -1277,6 +1365,262 @@ export function MyScreen({
           </button>
         </div>
       </nav>
+
+      {/* 토스트 알림 */}
+      {toastMessage && (
+        <div className="fixed top-6 left-1/2 -translate-x-1/2 z-50 rounded-full bg-slate-900/90 text-white px-4 py-2 text-xs font-semibold shadow-lg backdrop-blur-md animate-in fade-in slide-in-from-top-2">
+          {toastMessage}
+        </div>
+      )}
+
+      {/* 5-1. 상생 제휴 혜택 모아보기 모달/바텀시트 */}
+      {isPartnershipModalOpen && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-xs p-0 sm:p-4 animate-in fade-in duration-200"
+          onClick={() => setIsPartnershipModalOpen(false)}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="w-full max-w-md bg-white rounded-t-3xl sm:rounded-3xl shadow-2xl flex flex-col max-h-[85dvh] overflow-hidden animate-in slide-in-from-bottom-4 duration-200"
+          >
+            {/* 모달 헤더 */}
+            <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100 bg-slate-50/70 shrink-0">
+              <div className="flex items-center gap-2.5">
+                <span className="text-xl p-1 rounded-xl bg-emerald-100/70">🌱</span>
+                <div>
+                  <h3 className="text-base font-black text-slate-900 leading-tight">
+                    행사장 주변 지역 상생 혜택
+                  </h3>
+                  <p className="text-[11px] text-slate-500 font-medium mt-0.5">
+                    축제·팝업 인근 맛집 & 카페 제휴 할인 쿠폰 모음
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsPartnershipModalOpen(false)}
+                className="size-8 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-500 transition-colors"
+                aria-label="닫기"
+              >
+                <X className="size-4" />
+              </button>
+            </div>
+
+            {/* 권역별 필터 칩 */}
+            <div className="flex items-center gap-1.5 px-4 py-2.5 overflow-x-auto no-scrollbar border-b border-slate-100 bg-white shrink-0">
+              {[
+                { id: 'all', label: '전체' },
+                { id: '성수', label: '성수' },
+                { id: '수원', label: '수원' },
+                { id: '종로', label: '종로·서촌' },
+                { id: '홍대', label: '홍대·마포' },
+                { id: '잠실', label: '잠실·송파' },
+              ].map((filter) => {
+                const isActive = partnershipAreaFilter === filter.id
+                return (
+                  <button
+                    key={filter.id}
+                    type="button"
+                    onClick={() => setPartnershipAreaFilter(filter.id)}
+                    className={`px-3 py-1 rounded-full text-xs font-bold shrink-0 transition-colors cursor-pointer ${
+                      isActive
+                        ? 'bg-[#1884F7] text-white shadow-2xs'
+                        : 'bg-slate-100 text-slate-600 hover:bg-slate-200/80'
+                    }`}
+                  >
+                    {filter.label}
+                  </button>
+                )
+              })}
+            </div>
+
+            {/* 쿠폰 리스트 바디 */}
+            <div className="flex flex-col gap-3 p-4 overflow-y-auto max-h-[calc(85dvh-130px)]">
+              {filteredPartnershipSpots.map((spot) => {
+                const isUsed = !!usedCouponCodes[spot.coupon.code]
+
+                return (
+                  <article
+                    key={spot.id}
+                    className="rounded-2xl border border-slate-100 bg-white p-3.5 shadow-2xs hover:shadow-md transition-all flex flex-col gap-2.5"
+                  >
+                    <div className="flex gap-3">
+                      {/* 좌측 썸네일 */}
+                      <div className="relative w-20 min-w-20 h-24 rounded-xl overflow-hidden bg-slate-100 shrink-0 border border-slate-100/80">
+                        <span
+                          className={`absolute top-1.5 left-1.5 z-10 px-1.5 py-0.5 rounded-md text-[9px] font-black text-white shadow-xs ${
+                            spot.category === '식당' ? 'bg-[#F43F5E]' : 'bg-[#1884F7]'
+                          }`}
+                        >
+                          {spot.category}
+                        </span>
+                        <EventImage
+                          src={spot.imageUrl}
+                          alt={spot.name}
+                          fill
+                          sizes="80px"
+                          referrerPolicy="no-referrer"
+                          className="object-cover"
+                        />
+                      </div>
+
+                      {/* 우측 상생 가게 정보 */}
+                      <div className="flex flex-col justify-between flex-1 min-w-0">
+                        <div>
+                          {/* 연계 행사 안내 뱃지 */}
+                          <div className="flex items-center gap-1 text-[10.5px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200/60 rounded-md px-1.5 py-0.5 w-fit max-w-full truncate mb-1">
+                            <span>🌱</span>
+                            <span className="truncate">{spot.connectionText}</span>
+                          </div>
+
+                          <h4 className="text-sm font-black text-slate-900 leading-snug line-clamp-1">
+                            {spot.name}
+                          </h4>
+
+                          <p className="text-xs font-bold text-[#1884F7] mt-0.5">
+                            {spot.coupon.title} ({spot.coupon.discount})
+                          </p>
+                          <p className="text-[11px] text-slate-400 font-medium truncate mt-0.5">
+                            {spot.tag}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* 액션 버튼 2열 */}
+                    <div className="flex items-center gap-2 pt-2 border-t border-slate-100">
+                      <button
+                        type="button"
+                        onClick={() => handleNavigateToEvent(spot)}
+                        className="flex-1 py-2 px-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 active:scale-95 text-slate-700 font-bold text-xs flex items-center justify-center gap-1 transition-colors"
+                      >
+                        <ExternalLink className="size-3.5 text-slate-500" />
+                        <span>해당 행사 보기</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setSelectedCouponSpot(spot)}
+                        className={`flex-1 py-2 px-2.5 rounded-xl font-bold text-xs flex items-center justify-center gap-1 transition-all active:scale-95 shadow-2xs ${
+                          isUsed
+                            ? 'bg-slate-100 text-slate-400'
+                            : 'bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white shadow-orange-500/20'
+                        }`}
+                      >
+                        <Ticket className="size-3.5" />
+                        <span>{isUsed ? '사용완료' : '쿠폰 받기 / 사용'}</span>
+                      </button>
+                    </div>
+                  </article>
+                )
+              })}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 5-2. 가상 쿠폰 사용 모달창 (모바일 바코드 형태) */}
+      {selectedCouponSpot && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-200"
+          onClick={() => setSelectedCouponSpot(null)}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="relative w-full max-w-sm bg-white rounded-3xl p-6 shadow-2xl border border-slate-100 flex flex-col items-center animate-in zoom-in-95 duration-200 text-center"
+          >
+            {/* 닫기 (X) 버튼 */}
+            <button
+              type="button"
+              onClick={() => setSelectedCouponSpot(null)}
+              aria-label="닫기"
+              className="absolute top-4 right-4 size-8 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-500 transition-colors"
+            >
+              <X className="size-4" />
+            </button>
+
+            {/* 상단 뱃지 & 타이틀 */}
+            <div className="flex items-center gap-1.5 mb-1">
+              <span
+                className={`text-[10px] font-black px-2 py-0.5 rounded-full text-white ${
+                  selectedCouponSpot.category === '식당' ? 'bg-[#F43F5E]' : 'bg-[#1884F7]'
+                }`}
+              >
+                {selectedCouponSpot.category}
+              </span>
+              <span className="text-[10px] font-bold text-amber-600 bg-amber-50 border border-amber-200/60 px-2 py-0.5 rounded-full">
+                {selectedCouponSpot.coupon.dday} 남음
+              </span>
+            </div>
+
+            <h3 className="text-lg font-black text-slate-900 mt-1">
+              {selectedCouponSpot.name}
+            </h3>
+
+            <div className="mt-2 text-center">
+              <span className="text-2xl font-black text-[#1884F7] tracking-tight">
+                {selectedCouponSpot.coupon.discount}
+              </span>
+              <p className="text-xs font-bold text-slate-700 mt-0.5">
+                {selectedCouponSpot.coupon.benefit}
+              </p>
+            </div>
+
+            {/* 가상 모바일 바코드 그래픽 */}
+            <div className="my-5 w-full bg-slate-50 rounded-2xl border border-dashed border-slate-300 p-4 flex flex-col items-center">
+              {/* 바코드 바 (Vertical Stripes) */}
+              <div className="h-14 w-full flex items-center justify-center gap-1 sm:gap-1.5 px-2 overflow-hidden select-none">
+                {[3, 1, 4, 2, 5, 1, 3, 2, 4, 1, 3, 5, 2, 1, 4, 2, 3, 1, 5, 2, 4, 1, 3].map((w, i) => (
+                  <div
+                    key={i}
+                    className="h-full bg-slate-900 rounded-xs"
+                    style={{ width: `${w * 1.5}px` }}
+                  />
+                ))}
+              </div>
+
+              {/* 쿠폰 고유 코드 및 번호 */}
+              <span className="text-xs font-mono font-black text-slate-800 tracking-widest mt-2">
+                {selectedCouponSpot.coupon.code}
+              </span>
+
+              {/* 유효기간 */}
+              <span className="text-[10px] text-slate-400 font-medium mt-1">
+                유효기간: {selectedCouponSpot.coupon.validUntil}
+              </span>
+            </div>
+
+            {/* [직원 확인 및 사용하기] 버튼 */}
+            {usedCouponCodes[selectedCouponSpot.coupon.code] ? (
+              <button
+                type="button"
+                disabled
+                className="w-full py-3.5 rounded-2xl bg-slate-100 text-slate-400 font-bold text-sm cursor-not-allowed flex items-center justify-center gap-1.5"
+              >
+                <Check className="size-4 stroke-[3]" />
+                <span>사용 완료된 쿠폰입니다</span>
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={() => handleUseCoupon(selectedCouponSpot.coupon.code)}
+                className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-[#1884F7] to-sky-500 hover:from-blue-600 hover:to-sky-600 active:scale-[0.98] text-white font-black text-sm shadow-md shadow-sky-500/20 transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+              >
+                <Ticket className="size-4" />
+                <span>직원 확인 및 사용하기</span>
+              </button>
+            )}
+
+            <p className="text-[10.5px] text-slate-400 mt-2.5">
+              주문 또는 결제 시 매장 직원에게 위 바코드를 제시해 주세요.
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* 6. 로그인 / 회원가입 모달 */}
       <AuthModal
