@@ -25,8 +25,11 @@ import {
   Palette,
   Trees,
   PawPrint,
+  Star,
+  MessageCircle,
 } from 'lucide-react'
 import type { PoppleEvent } from '@/lib/events'
+import { REAL_REVIEWS_SEED, type Review } from '@/lib/constants/reviews'
 import {
   recordEventClick,
   computeWeeklyRanking,
@@ -37,8 +40,6 @@ import {
 } from '@/lib/ranking'
 import {
   type ThemeDefinition,
-  getHomeThemes,
-  getRandomRegularTheme,
   filterEventsByTheme,
 } from '@/lib/theme'
 
@@ -159,12 +160,26 @@ export function HomeScreen({
   const [activeTab, setActiveTab] = useState<'home' | 'events' | 'community' | 'my'>('home')
   const [showScrollTop, setShowScrollTop] = useState(false)
 
-  // 테마별 축제 추천 상태 (계절 맞춤 테마 1종 + 상시 랜덤 테마 1종)
-  const [themePair, setThemePair] = useState<[ThemeDefinition, ThemeDefinition]>(() =>
-    getHomeThemes(),
-  )
   const [activeTheme, setActiveTheme] = useState<ThemeDefinition | null>(null)
   const [themeEvents, setThemeEvents] = useState<PoppleEvent[]>([])
+
+  // 실시간 방문 후기 포토 피드 상태 (0.05초 정적 Seed 즉각 렌더링 + 반응형 좋아요)
+  const [reviewsList] = useState<Review[]>(() => REAL_REVIEWS_SEED)
+  const [likedReviews, setLikedReviews] = useState<Record<string, boolean>>({})
+  const [reviewLikes, setReviewLikes] = useState<Record<string, number>>({})
+
+  const handleToggleReviewLike = (reviewId: string, e: React.MouseEvent) => {
+    e.stopPropagation()
+    const isLiked = !likedReviews[reviewId]
+    setLikedReviews((prev) => ({ ...prev, [reviewId]: isLiked }))
+    setReviewLikes((prev) => {
+      const current = prev[reviewId] ?? (reviewsList.find((r) => r.id === reviewId)?.likes || 0)
+      return {
+        ...prev,
+        [reviewId]: isLiked ? current + 1 : current - 1,
+      }
+    })
+  }
 
   // 축제 풀 및 랭킹 상태 (Supabase festivals 테이블 view_count 실시간 연동)
   const [allFestivals, setAllFestivals] = useState<PoppleEvent[]>([])
@@ -291,13 +306,7 @@ export function HomeScreen({
     setThemeEvents([])
   }
 
-  // 상시 테마 랜덤 셔플 핸들러
-  const handleShuffleRegularTheme = () => {
-    setThemePair(([seasonTheme, currentRegular]) => [
-      seasonTheme,
-      getRandomRegularTheme(currentRegular.id),
-    ])
-  }
+
 
   // 행사 키워드 검색 핸들러 (한국관광공사 TourAPI 및 로컬 필터링)
   const handleSearch = async (queryToSearch: string) => {
@@ -1004,67 +1013,153 @@ export function HomeScreen({
               </div>
             </section>
 
-            {/* 4번: PICK YOUR MOOD 오늘은 어떤 테마가 끌려요? (계절 테마 1개 + 상시 랜덤 테마 1개) */}
-            <section aria-labelledby="section-theme" className="flex flex-col gap-2.5">
+            {/* 4번: REAL REVIEWS 팝플러의 생생 방문기 (실시간 방문 후기 포토 피드) */}
+            <section aria-labelledby="section-reviews" className="flex flex-col gap-3">
               <div className="flex items-end justify-between">
                 <div>
                   <span className="text-[11px] font-black text-[#1884F7] tracking-wider uppercase">
-                    PICK YOUR MOOD
+                    REAL REVIEWS
                   </span>
-                  <h2 id="section-theme" className="text-xl font-black text-slate-900">
-                    오늘은 어떤 테마가 끌려요?
+                  <h2 id="section-reviews" className="text-xl font-black text-slate-900 tracking-tight">
+                    팝플러의 생생 방문기
                   </h2>
                 </div>
                 <button
                   type="button"
-                  onClick={handleShuffleRegularTheme}
-                  className="text-xs font-bold text-slate-400 hover:text-[#1884F7] flex items-center gap-1 transition-colors group"
-                  title="다른 상시 테마로 셔플"
+                  onClick={() => {
+                    if (onOpenCommunity) {
+                      onOpenCommunity()
+                    } else {
+                      router.push('/community')
+                    }
+                  }}
+                  className="text-xs font-bold text-slate-400 hover:text-[#1884F7] flex items-center gap-0.5 transition-colors group"
+                  title="커뮤니티 후기 더보기"
                 >
-                  <span>테마 셔플</span>
-                  <Sparkles className="size-3 text-[#1884F7] group-hover:rotate-12 transition-transform" />
+                  <span>더보기</span>
+                  <ChevronRight className="size-3.5 text-slate-400 group-hover:text-[#1884F7] group-hover:translate-x-0.5 transition-all" />
                 </button>
               </div>
 
-              {/* 2단 테마 그리드 (피그마 2열 카드 그리드) */}
-              <div className="grid grid-cols-2 gap-3.5">
-                {themePair.map((theme) => (
-                  <div
-                    key={theme.id}
-                    onClick={() => handleSelectTheme(theme)}
-                    role="button"
-                    tabIndex={0}
-                    className="relative aspect-[4/5] rounded-3xl overflow-hidden shadow-sm cursor-pointer group active:scale-[0.98] transition-transform select-none"
-                  >
-                    <Image
-                      src={theme.imageUrl}
-                      alt={theme.title}
-                      fill
-                      unoptimized
-                      className="object-cover transition-transform duration-500 group-hover:scale-105"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
+              {/* 2열 실시간 포토 피드 그리드 */}
+              <div className="grid grid-cols-2 gap-3 sm:gap-3.5">
+                {reviewsList.map((review) => {
+                  const isLiked = !!likedReviews[review.id]
+                  const likesCount = reviewLikes[review.id] ?? review.likes
 
-                    {/* 상단 뱃지: 계절 맞춤 / 추천 테마 */}
-                    <div className="absolute top-3 left-3">
-                      <span className="inline-block bg-white/20 backdrop-blur-md text-white text-[10px] font-bold px-2 py-0.5 rounded-full border border-white/30">
-                        {theme.type === 'season' ? '계절 맞춤' : '인기 테마'}
-                      </span>
-                    </div>
+                  return (
+                    <article
+                      key={review.id}
+                      onClick={() => {
+                        const targetEvent = allFestivals.find(
+                          (e) => e.id === review.eventId || e.title.includes(review.eventTitle.slice(0, 4)),
+                        )
+                        if (targetEvent) {
+                          onSelectEvent(targetEvent)
+                        } else if (onOpenCommunity) {
+                          onOpenCommunity()
+                        } else {
+                          router.push('/community')
+                        }
+                      }}
+                      className="bg-white rounded-2xl sm:rounded-3xl border border-slate-100 shadow-[0_4px_16px_rgba(0,0,0,0.03)] overflow-hidden flex flex-col hover:shadow-md transition-all active:scale-[0.99] group cursor-pointer select-none"
+                    >
+                      {/* 상단: 현장 포토 이미지 + 행사 태그 뱃지 + 별점 뱃지 */}
+                      <div className="relative aspect-[4/3] w-full overflow-hidden bg-slate-100 shrink-0">
+                        <Image
+                          src={review.imageUrl}
+                          alt={review.eventTitle}
+                          fill
+                          sizes="(max-width: 640px) 50vw, 220px"
+                          referrerPolicy="no-referrer"
+                          className="object-cover transition-transform duration-500 group-hover:scale-105"
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
 
-                    <div className="absolute bottom-3.5 left-3.5 right-3.5 flex flex-col">
-                      <span className="text-[10px] font-semibold text-sky-200">
-                        {theme.tagline}
-                      </span>
-                      <h3 className="text-base font-black text-white leading-tight mt-0.5 line-clamp-2">
-                        {theme.title}
-                      </h3>
-                      <p className="text-[10px] text-slate-300 font-medium mt-1 line-clamp-1">
-                        {theme.tags.join(' ')}
-                      </p>
-                    </div>
-                  </div>
-                ))}
+                        {/* 좌측 상단 행사 태그 뱃지 */}
+                        <div className="absolute top-2 left-2 z-10">
+                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-black bg-black/60 backdrop-blur-md text-white border border-white/20 shadow-xs">
+                            {review.tag}
+                          </span>
+                        </div>
+
+                        {/* 우측 상단 별점 뱃지 */}
+                        <div className="absolute top-2 right-2 z-10">
+                          <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[10px] font-black bg-white/95 backdrop-blur-md text-amber-500 shadow-2xs">
+                            <Star className="size-2.5 fill-amber-400 text-amber-400" />
+                            <span>{review.rating.toFixed(1)}</span>
+                          </span>
+                        </div>
+
+                        {/* 이미지 하단 행사명 오버레이 */}
+                        <div className="absolute bottom-1.5 left-2.5 right-2.5 z-10">
+                          <p className="text-[10px] font-bold text-white/95 truncate drop-shadow-xs">
+                            {review.eventTitle}
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* 하단: 핵심 리뷰 내용, 작성자 프로필, 좋아요 & 댓글 수 */}
+                      <div className="p-2.5 sm:p-3 flex flex-col justify-between flex-1 gap-2">
+                        {/* 핵심 한 줄 리뷰 */}
+                        <p className="text-xs font-bold text-slate-800 line-clamp-2 leading-snug group-hover:text-[#1884F7] transition-colors">
+                          &ldquo;{review.content}&rdquo;
+                        </p>
+
+                        {/* 작성자 정보 및 소셜 지표 */}
+                        <div className="flex items-center justify-between pt-1 border-t border-slate-100/90 mt-auto text-[10px]">
+                          {/* 작성자 아바타 + 닉네임 + 상대 시간 */}
+                          <div className="flex items-center gap-1.5 min-w-0 pr-1">
+                            <div className="relative size-4.5 rounded-full overflow-hidden bg-slate-200 shrink-0 ring-1 ring-slate-100">
+                              <Image
+                                src={review.avatar}
+                                alt={review.author}
+                                fill
+                                sizes="18px"
+                                referrerPolicy="no-referrer"
+                                className="object-cover"
+                              />
+                            </div>
+                            <div className="flex items-center gap-1 min-w-0">
+                              <span className="font-bold text-slate-700 truncate max-w-[60px] sm:max-w-[70px]">
+                                {review.author}
+                              </span>
+                              <span className="text-slate-400 text-[9px] shrink-0">
+                                · {review.createdAt}
+                              </span>
+                            </div>
+                          </div>
+
+                          {/* 좋아요 & 댓글 수 */}
+                          <div className="flex items-center gap-2 shrink-0 text-slate-400">
+                            <button
+                              type="button"
+                              onClick={(e) => handleToggleReviewLike(review.id, e)}
+                              className="flex items-center gap-0.5 hover:text-rose-500 transition-colors"
+                              title="좋아요"
+                            >
+                              <Heart
+                                className={`size-3 transition-transform active:scale-125 ${
+                                  isLiked
+                                    ? 'fill-rose-500 text-rose-500'
+                                    : 'stroke-[1.8] text-slate-400'
+                                }`}
+                              />
+                              <span className={`font-mono text-[10px] ${isLiked ? 'text-rose-500 font-bold' : ''}`}>
+                                {likesCount}
+                              </span>
+                            </button>
+
+                            <span className="flex items-center gap-0.5">
+                              <MessageCircle className="size-3 stroke-[1.8]" />
+                              <span className="font-mono text-[10px]">{review.commentsCount}</span>
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    </article>
+                  )
+                })}
               </div>
             </section>
           </>
