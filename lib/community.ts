@@ -1,3 +1,5 @@
+import { getUnifiedReviews } from '@/lib/constants/reviews'
+
 export type CommunityCategory = 'all' | 'talk' | 'photo' | 'calendar'
 
 export interface CommunityComment {
@@ -21,6 +23,9 @@ export interface CommunityPost {
   likes: number
   likedByUser?: boolean
   comments: CommunityComment[]
+  eventId?: string
+  eventTitle?: string
+  rating?: number
 }
 
 export const CATEGORY_TABS: { id: CommunityCategory; label: string; icon: string }[] = [
@@ -100,22 +105,58 @@ export function formatRelativeTime(timestamp: number): string {
 
 /**
  * localStorage에서 게시글 목록 조회
+ * (통합 리뷰 데이터 소스의 후기들도 자동으로 '축제후기'(photo) 카테고리로 합성)
  */
 export function getCommunityPosts(): CommunityPost[] {
   if (typeof window === 'undefined') return []
   try {
     const raw = localStorage.getItem(STORAGE_KEY)
-    if (!raw) {
-      return []
+    let parsed: CommunityPost[] = []
+    if (raw) {
+      const json = JSON.parse(raw)
+      if (Array.isArray(json)) {
+        parsed = json.filter(
+          (p: CommunityPost) => p && !p.id?.startsWith('mock_post_'),
+        )
+      }
     }
-    const parsed = JSON.parse(raw)
-    if (!Array.isArray(parsed)) return []
 
-    // mock_post 로 시작하는 이전 가짜 목업 게시글 자동 제거
-    const realPosts = parsed.filter(
-      (p: CommunityPost) => p && !p.id?.startsWith('mock_post_'),
-    )
-    return realPosts
+    // 통합 리뷰 저장소의 리뷰들도 커뮤니티 피드(photo 카테고리)에 포함
+    const unifiedReviews = getUnifiedReviews()
+    const existingPostIds = new Set(parsed.map((p) => p.id))
+
+    const convertedReviewPosts: CommunityPost[] = []
+    for (const rev of unifiedReviews) {
+      const targetPostId = `post_${rev.id}`
+      if (!existingPostIds.has(targetPostId) && !existingPostIds.has(rev.id)) {
+        convertedReviewPosts.push({
+          id: targetPostId,
+          category: 'photo',
+          author: rev.author,
+          avatarColor: rev.avatarColor || 'bg-[#1884F7]',
+          content: `#[${rev.eventTitle}]\n★ ${rev.rating.toFixed(1)}점\n${rev.content}`,
+          imageUrl: rev.imageUrl,
+          createdAt: rev.timestamp || Date.now(),
+          likes: rev.likes,
+          likedByUser: rev.likedByUser,
+          eventId: rev.eventId,
+          eventTitle: rev.eventTitle,
+          rating: rev.rating,
+          comments: [
+            {
+              id: `c_auto_${rev.id}`,
+              author: '팝플봇',
+              content: `${rev.author}님의 생생한 ${rev.eventTitle} 방문 후기 감사합니다! 🎉`,
+              createdAt: rev.timestamp || Date.now(),
+            },
+          ],
+        })
+      }
+    }
+
+    const all = [...parsed, ...convertedReviewPosts]
+    all.sort((a, b) => b.createdAt - a.createdAt)
+    return all
   } catch (err) {
     console.warn('[community] Failed to load posts from localStorage:', err)
     return []

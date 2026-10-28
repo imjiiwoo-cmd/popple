@@ -27,27 +27,19 @@ import {
 import type { PoppleEvent } from '@/lib/events'
 import { getUserProfile } from '@/lib/mypage'
 import { supabase } from '@/lib/supabaseClient'
-import {
-  getCommunityPosts,
-  saveCommunityPosts,
-  compressImageFileToBase64,
-  type CommunityPost,
-} from '@/lib/community'
+import { compressImageFileToBase64 } from '@/lib/community'
 import { recordEventClick } from '@/lib/ranking'
 import { getNearbySpotsForEvent, type NearbySpot } from '@/lib/constants/nearby-spots'
+import {
+  getReviewsForEvent,
+  addUnifiedReview,
+  subscribeToReviews,
+  type Review,
+} from '@/lib/constants/reviews'
 
 interface EventDetailProps {
   event: PoppleEvent
   onBack: () => void
-}
-
-interface ReviewItem {
-  id: string
-  nickname: string
-  date: string
-  rating: number
-  content: string
-  imageUrl?: string
 }
 
 
@@ -84,8 +76,8 @@ export function EventDetail({ event, onBack }: EventDetailProps) {
     return () => cancelAnimationFrame(rafId)
   }, [event.id])
 
-  // 리뷰 및 방명록 상태
-  const [reviews, setReviews] = useState<ReviewItem[]>([])
+  // 리뷰 및 방명록 상태 (단일 공통 저장소 연동)
+  const [reviews, setReviews] = useState<Review[]>([])
   const [newNickname, setNewNickname] = useState('')
   const [newContent, setNewContent] = useState('')
   const [newRating, setNewRating] = useState(5)
@@ -133,19 +125,18 @@ export function EventDetail({ event, onBack }: EventDetailProps) {
     }
   }, [])
 
-  // 리뷰 평점 및 개수 요약
+  // 리뷰 평점 및 개수 요약 (실제 후기 데이터 기반 동적 계산)
   const averageRating =
     reviews.length > 0
       ? (reviews.reduce((acc, r) => acc + r.rating, 0) / reviews.length).toFixed(1)
-      : '4.8'
-  const totalReviewsCount = reviews.length > 0 ? reviews.length : 12
+      : '5.0'
+  const totalReviewsCount = reviews.length
 
   // 리뷰 사진 첨부 상태
   const [reviewImageBase64, setReviewImageBase64] = useState<string | null>(null)
   const [isCompressingImage, setIsCompressingImage] = useState(false)
   const reviewFileInputRef = useRef<HTMLInputElement | null>(null)
 
-  const reviewStorageKey = `popple_reviews_${event.id}`
   const bookmarkStorageKey = `popple_bookmark_${event.id}`
 
   // 닉네임 기본값으로 사용자 프로필 및 Supabase 로그인 세션 닉네임 로드
@@ -187,29 +178,27 @@ export function EventDetail({ event, onBack }: EventDetailProps) {
     }, 2500)
   }
 
-  // localStorage에서 북마크 및 후기 불러오기
+  // 북마크 로드 및 단일 공통 저장소에서 해당 행사 후기 로드 (실시간 구독)
   useEffect(() => {
     try {
       const savedBookmark = localStorage.getItem(bookmarkStorageKey)
       if (savedBookmark === 'true') {
         setIsBookmarked(true)
       }
-
-      const storedReviews = localStorage.getItem(reviewStorageKey)
-      if (storedReviews) {
-        const parsed = JSON.parse(storedReviews)
-        if (Array.isArray(parsed)) {
-          // 'default-' 로 시작하는 이전 가짜 목업 후기 자동 필터링
-          const realReviews = parsed.filter((r: ReviewItem) => r && !r.id?.startsWith('default-'))
-          setReviews(realReviews)
-          return
-        }
-      }
-      setReviews([])
     } catch {
-      setReviews([])
+      // 무시
     }
-  }, [bookmarkStorageKey, reviewStorageKey])
+
+    const loadReviews = () => {
+      const matched = getReviewsForEvent(event.id, event.title)
+      setReviews(matched)
+    }
+
+    loadReviews()
+
+    const unsubscribe = subscribeToReviews(loadReviews)
+    return () => unsubscribe()
+  }, [event.id, event.title, bookmarkStorageKey])
 
   // 북마크 토글
   const handleToggleBookmark = () => {
@@ -256,70 +245,35 @@ export function EventDetail({ event, onBack }: EventDetailProps) {
     }
 
     setIsSubmitting(true)
-    const today = new Date()
-    const formattedDate = `${today.getFullYear()}.${String(today.getMonth() + 1).padStart(2, '0')}.${String(today.getDate()).padStart(2, '0')} 방문`
+    const userProfile = getUserProfile()
 
-    const newReviewItem: ReviewItem = {
-      id: `review-${Date.now()}`,
-      nickname: newNickname.trim(),
-      date: formattedDate,
+    const newRev = addUnifiedReview({
+      eventId: event.id,
+      eventTitle: event.title,
+      author: newNickname.trim(),
+      avatar: userProfile?.avatarUrl,
+      avatarColor: userProfile?.avatarUrl.includes('bear')
+        ? 'bg-amber-600'
+        : userProfile?.avatarUrl.includes('rabbit')
+        ? 'bg-rose-400'
+        : userProfile?.avatarUrl.includes('cat')
+        ? 'bg-amber-400'
+        : userProfile?.avatarUrl.includes('dog')
+        ? 'bg-orange-500'
+        : userProfile?.avatarUrl.includes('frog')
+        ? 'bg-emerald-500'
+        : 'bg-[#1884F7]',
       rating: newRating,
       content: newContent.trim(),
       imageUrl: reviewImageBase64 || undefined,
-    }
+    })
 
-    const updated = [newReviewItem, ...reviews]
-    setReviews(updated)
-
-    try {
-      localStorage.setItem(reviewStorageKey, JSON.stringify(updated))
-    } catch {
-      // localStorage 예외 방어
-    }
-
-    // [1] 커뮤니티 피드에도 '축제후기'(photo) 카테고리로 실시간 자동 추가
-    const userProfile = getUserProfile()
-    const author = newNickname.trim() || userProfile.nickname || '익명팝플'
-    const postImageUrl = reviewImageBase64 || event.imageUrl || event.poster || undefined
-
-    const communityPost: CommunityPost = {
-      id: `post_review_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
-      category: 'photo', // 커뮤니티 '축제후기'
-      author,
-      avatarColor: userProfile.avatarUrl.includes('bear')
-        ? 'bg-amber-600'
-        : userProfile.avatarUrl.includes('rabbit')
-        ? 'bg-rose-400'
-        : userProfile.avatarUrl.includes('cat')
-        ? 'bg-amber-400'
-        : userProfile.avatarUrl.includes('dog')
-        ? 'bg-orange-500'
-        : userProfile.avatarUrl.includes('frog')
-        ? 'bg-emerald-500'
-        : 'bg-[#1884F7]',
-      content: `#[${event.title}]\n★ ${newRating}점\n${newContent.trim()}`,
-      imageUrl: postImageUrl,
-      createdAt: Date.now(),
-      likes: 0,
-      likedByUser: false,
-      comments: [
-        {
-          id: `c_auto_${Date.now()}`,
-          author: '팝플봇',
-          content: `${author}님의 생생한 ${event.title} 방문 후기 감사합니다! 🎉`,
-          createdAt: Date.now(),
-        },
-      ],
-    }
-
-    const currentPosts = getCommunityPosts()
-    saveCommunityPosts([communityPost, ...currentPosts])
-
+    setReviews((prev) => [newRev, ...prev.filter((r) => r.id !== newRev.id)])
     setNewContent('')
     setReviewImageBase64(null)
     setNewRating(5)
     setIsSubmitting(false)
-    showToast('방문 후기가 등록되고 커뮤니티(축제후기) 피드에도 실시간 공유되었어요! ✨')
+    showToast('방문 후기가 등록되고 홈 화면 및 커뮤니티(축제후기) 피드에도 실시간 공유되었어요! ✨')
   }
 
   // 네이버지도 길찾기 URL (행사 주소 또는 장소명 기준)
@@ -852,44 +806,50 @@ export function EventDetail({ event, onBack }: EventDetailProps) {
               </div>
             ) : (
               reviews.map((rev) => {
-              const initial = rev.nickname ? rev.nickname.charAt(0) : '익'
-              return (
-                <div
-                  key={rev.id}
-                  className="rounded-2xl bg-[#F8FAFC] border border-slate-100/90 p-4 shadow-2xs"
-                >
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2.5">
-                      <div className="size-9 rounded-full bg-[#1884F7] text-white font-bold flex items-center justify-center text-xs">
-                        {initial}
+                const authorName = rev.author || (rev as any).nickname || '익명팝플'
+                const initial = authorName.charAt(0)
+                const createdDate = rev.createdAt || (rev as any).date || '방금 전'
+                const avatarColor = rev.avatarColor || 'bg-[#1884F7]'
+
+                return (
+                  <div
+                    key={rev.id}
+                    className="rounded-2xl bg-[#F8FAFC] border border-slate-100/90 p-4 shadow-2xs"
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2.5">
+                        <div className={`size-9 rounded-full ${avatarColor} text-white font-bold flex items-center justify-center text-xs shadow-xs`}>
+                          {initial}
+                        </div>
+                        <div>
+                          <p className="text-sm font-bold text-slate-900 leading-none">{authorName}</p>
+                          <p className="text-[11px] text-slate-400 mt-1">{createdDate}</p>
+                        </div>
                       </div>
-                      <div>
-                        <p className="text-sm font-bold text-slate-900 leading-none">{rev.nickname}</p>
-                        <p className="text-[11px] text-slate-400 mt-1">{rev.date}</p>
+                      <div className="flex items-center gap-1 text-xs font-bold text-amber-500">
+                        <span>★</span>
+                        <span>{rev.rating.toFixed(1)}</span>
                       </div>
                     </div>
-                    <div className="flex items-center gap-1 text-xs font-bold text-amber-500">
-                      <span>★</span>
-                      <span>{rev.rating.toFixed(1)}</span>
-                    </div>
+                    <p className="mt-2.5 text-xs text-slate-600 leading-relaxed break-keep">
+                      {rev.content}
+                    </p>
+                    {rev.imageUrl && (
+                      <div className="relative mt-2.5 aspect-[16/9] w-full max-w-xs rounded-xl overflow-hidden bg-slate-100 border border-slate-200/80 shadow-2xs">
+                        <Image
+                          src={rev.imageUrl}
+                          alt="방문 후기 사진"
+                          fill
+                          unoptimized
+                          referrerPolicy="no-referrer"
+                          className="object-cover"
+                        />
+                      </div>
+                    )}
                   </div>
-                  <p className="mt-2.5 text-xs text-slate-600 leading-relaxed break-keep">
-                    {rev.content}
-                  </p>
-                  {rev.imageUrl && (
-                    <div className="relative mt-2.5 aspect-[16/9] w-full max-w-xs rounded-xl overflow-hidden bg-slate-100 border border-slate-200/80 shadow-2xs">
-                      <Image
-                        src={rev.imageUrl}
-                        alt="방문 후기 사진"
-                        fill
-                        unoptimized
-                        className="object-cover"
-                      />
-                    </div>
-                  )}
-                </div>
-              )
-            }))}
+                )
+              })
+            )}
           </div>
 
           {/* 방문 전 확인해 주세요 안내 박스 (시안 4번 하단) */}

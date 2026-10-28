@@ -29,7 +29,13 @@ import {
   MessageCircle,
 } from 'lucide-react'
 import type { PoppleEvent } from '@/lib/events'
-import { REAL_REVIEWS_SEED, type Review } from '@/lib/constants/reviews'
+import {
+  getUnifiedReviews,
+  toggleLikeUnifiedReview,
+  subscribeToReviews,
+  type Review,
+} from '@/lib/constants/reviews'
+import { PRESET_FESTIVALS, PRESET_POPUPS } from '@/lib/constants/events'
 import {
   recordEventClick,
   computeWeeklyRanking,
@@ -163,22 +169,24 @@ export function HomeScreen({
   const [activeTheme, setActiveTheme] = useState<ThemeDefinition | null>(null)
   const [themeEvents, setThemeEvents] = useState<PoppleEvent[]>([])
 
-  // 실시간 방문 후기 포토 피드 상태 (0.05초 정적 Seed 즉각 렌더링 + 반응형 좋아요)
-  const [reviewsList] = useState<Review[]>(() => REAL_REVIEWS_SEED)
+  // 실시간 방문 후기 포토 피드 상태 (단일 공통 저장소 연동 및 실시간 갱신)
+  const [reviewsList, setReviewsList] = useState<Review[]>(() => getUnifiedReviews())
   const [likedReviews, setLikedReviews] = useState<Record<string, boolean>>({})
   const [reviewLikes, setReviewLikes] = useState<Record<string, number>>({})
 
+  useEffect(() => {
+    const refreshReviews = () => {
+      setReviewsList(getUnifiedReviews())
+    }
+    const unsubscribe = subscribeToReviews(refreshReviews)
+    return () => unsubscribe()
+  }, [])
+
   const handleToggleReviewLike = (reviewId: string, e: React.MouseEvent) => {
     e.stopPropagation()
-    const isLiked = !likedReviews[reviewId]
-    setLikedReviews((prev) => ({ ...prev, [reviewId]: isLiked }))
-    setReviewLikes((prev) => {
-      const current = prev[reviewId] ?? (reviewsList.find((r) => r.id === reviewId)?.likes || 0)
-      return {
-        ...prev,
-        [reviewId]: isLiked ? current + 1 : current - 1,
-      }
-    })
+    const result = toggleLikeUnifiedReview(reviewId)
+    setLikedReviews((prev) => ({ ...prev, [reviewId]: result.likedByUser }))
+    setReviewLikes((prev) => ({ ...prev, [reviewId]: result.likes }))
   }
 
   // 축제 풀 및 랭킹 상태 (Supabase festivals 테이블 view_count 실시간 연동)
@@ -1051,9 +1059,16 @@ export function HomeScreen({
                     <article
                       key={review.id}
                       onClick={() => {
-                        const targetEvent = allFestivals.find(
-                          (e) => e.id === review.eventId || e.title.includes(review.eventTitle.slice(0, 4)),
-                        )
+                        const targetEvent =
+                          allFestivals.find(
+                            (e) => e.id === review.eventId || (review.eventTitle && e.title.includes(review.eventTitle.slice(0, 4))),
+                          ) ||
+                          PRESET_POPUPS.find(
+                            (e) => e.id === review.eventId || (review.eventTitle && e.title.includes(review.eventTitle.slice(0, 4))),
+                          ) ||
+                          PRESET_FESTIVALS.find(
+                            (e) => e.id === review.eventId || (review.eventTitle && e.title.includes(review.eventTitle.slice(0, 4))),
+                          )
                         if (targetEvent) {
                           onSelectEvent(targetEvent)
                         } else if (onOpenCommunity) {
@@ -1066,14 +1081,23 @@ export function HomeScreen({
                     >
                       {/* 상단: 현장 포토 이미지 + 행사 태그 뱃지 + 별점 뱃지 */}
                       <div className="relative aspect-[4/3] w-full overflow-hidden bg-slate-100 shrink-0">
-                        <Image
-                          src={review.imageUrl}
-                          alt={review.eventTitle}
-                          fill
-                          sizes="(max-width: 640px) 50vw, 220px"
-                          referrerPolicy="no-referrer"
-                          className="object-cover transition-transform duration-500 group-hover:scale-105"
-                        />
+                        {review.imageUrl ? (
+                          <Image
+                            src={review.imageUrl}
+                            alt={review.eventTitle}
+                            fill
+                            sizes="(max-width: 640px) 50vw, 220px"
+                            referrerPolicy="no-referrer"
+                            className="object-cover transition-transform duration-500 group-hover:scale-105"
+                          />
+                        ) : (
+                          <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-sky-50 to-blue-100/70 p-3 text-center">
+                            <span className="text-xl">✨</span>
+                            <span className="text-[10px] text-slate-500 font-bold mt-1 line-clamp-1">
+                              {review.eventTitle}
+                            </span>
+                          </div>
+                        )}
                         <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
 
                         {/* 좌측 상단 행사 태그 뱃지 */}

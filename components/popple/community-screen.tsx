@@ -36,6 +36,7 @@ import {
 import { MiniPhotoCalendar } from './mini-photo-calendar'
 import { getUserProfile, getPhotoDiaries } from '@/lib/mypage'
 import { supabase } from '@/lib/supabaseClient'
+import { subscribeToReviews } from '@/lib/constants/reviews'
 
 interface CommunityScreenProps {
   onOpenHome: () => void
@@ -71,10 +72,13 @@ export function CommunityScreen({
 
   const fileInputRef = useRef<HTMLInputElement | null>(null)
 
-  // 1. 초기 로드 (localStorage 및 Supabase 세션 동기화)
+  // 1. 초기 로드 (localStorage, 통합 리뷰 저장소, Supabase 세션 동기화 및 실시간 구독)
   useEffect(() => {
-    const loaded = getCommunityPosts()
-    setPosts(loaded)
+    const refresh = () => {
+      const loaded = getCommunityPosts()
+      setPosts(loaded)
+    }
+    refresh()
     setIsLoaded(true)
     const profile = getUserProfile()
     if (profile && profile.nickname) {
@@ -87,6 +91,9 @@ export function CommunityScreen({
         setAuthorName(metaNickname)
       }
     })
+
+    const unsubscribe = subscribeToReviews(refresh)
+    return () => unsubscribe()
   }, [])
 
   // 글쓰기 모달 열기 시 최신 닉네임 동기화
