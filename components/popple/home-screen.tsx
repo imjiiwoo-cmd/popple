@@ -863,7 +863,7 @@ export function HomeScreen({
 
               {/* 캐러셀 인디케이터 점 5개 (클릭 시 해당 슬라이드로 이동) */}
               {weeklyTopEvents.length > 0 && (
-                <div className="flex justify-center items-center gap-1.5 pt-1">
+                <div className="flex justify-center items-center gap-1.5 mt-3.5 sm:mt-4">
                   {weeklyTopEvents.map((_, idx) => (
                     <button
                       key={idx}
