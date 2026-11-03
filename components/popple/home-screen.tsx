@@ -739,37 +739,36 @@ export function HomeScreen({
                 }
               }}
               aria-label="Popple Lens - 사진 한 장으로 찾는 취향 맞춤 행사"
-              className="group relative cursor-pointer overflow-hidden rounded-2xl bg-gradient-to-r from-sky-500 via-[#1884F7] to-indigo-600 p-3.5 sm:p-4 text-white shadow-md shadow-sky-500/15 transition-all duration-300 hover:shadow-lg hover:shadow-sky-500/25 hover:scale-[1.01] active:scale-[0.99] border border-white/20"
+              className="group relative cursor-pointer overflow-hidden rounded-2xl bg-gradient-to-r from-sky-50/80 via-blue-50/60 to-indigo-50/50 border border-sky-100/80 p-3.5 sm:p-4 shadow-sm backdrop-blur-sm transition-all duration-300 hover:shadow-md hover:border-sky-200/90 hover:scale-[1.01] active:scale-[0.99]"
             >
-              {/* 배경 장식 광채 및 그리드/블러 이펙트 */}
-              <div className="pointer-events-none absolute -right-6 -bottom-8 size-28 rounded-full bg-white/15 blur-2xl transition-all duration-500 group-hover:scale-125 group-hover:bg-white/25" />
-              <div className="pointer-events-none absolute -left-4 -top-6 size-20 rounded-full bg-sky-300/20 blur-xl" />
+              {/* 비눗방울 글래스모피즘 은은한 원형 블러 데코 */}
+              <div className="pointer-events-none absolute -right-4 -bottom-6 w-24 h-24 rounded-full bg-sky-200/30 blur-xl transition-all duration-500 group-hover:scale-125 group-hover:bg-sky-300/40" />
+              <div className="pointer-events-none absolute right-12 -top-4 w-16 h-16 rounded-full bg-blue-100/40 blur-lg" />
+              <div className="pointer-events-none absolute -left-4 -top-6 w-20 h-20 rounded-full bg-sky-100/40 blur-xl" />
 
               <div className="relative flex items-center justify-between gap-3">
-                <div className="flex flex-col gap-0.5 min-w-0">
-                  <div className="flex items-center gap-1.5 mb-0.5">
-                    <span className="inline-flex items-center gap-1 rounded-full bg-white/20 backdrop-blur-md px-2 py-0.5 text-[9.5px] font-black tracking-wider uppercase text-white shadow-2xs">
-                      <Sparkles className="size-2.5 fill-amber-300 text-amber-300 animate-pulse" />
-                      POPPLE LENS
-                    </span>
-                    <span className="text-[10px] text-sky-100 font-semibold hidden xs:inline">
-                      AI 비전 추천
+                <div className="flex flex-col min-w-0">
+                  <div className="flex items-center gap-1.5 mb-1">
+                    <span className="inline-flex items-center gap-1 bg-white/70 text-sky-600 text-[11px] font-semibold px-2.5 py-0.5 rounded-full border border-sky-100/60 shadow-2xs">
+                      🫧 POPPLE LENS
                     </span>
                   </div>
 
-                  <h3 className="text-sm sm:text-base font-black leading-snug tracking-tight text-white flex items-center gap-1.5">
-                    <span>📸 사진 한 장으로 찾는 취향 맞춤 행사</span>
+                  <h3 className="text-sm font-bold text-slate-800 tracking-tight leading-snug">
+                    사진 한 장으로 찾는 취향 맞춤 행사
                   </h3>
-                  <p className="text-[11px] sm:text-xs text-sky-100 font-medium line-clamp-1 leading-normal">
-                    어디 갈지 고민될 때 내 기분·풍경 사진을 올려보세요
+                  <p className="text-xs text-slate-500 mt-0.5 line-clamp-1 leading-normal">
+                    기분이나 풍경 사진을 올리면 딱 맞는 행사를 찾아드려요
                   </p>
                 </div>
 
-                {/* 우측 버튼: [AI 추천받기 >] */}
+                {/* 우측 액션 버튼: 원형의 반투명 글래스 버튼 */}
                 <div className="shrink-0">
-                  <span className="inline-flex items-center gap-1 rounded-xl bg-white/95 hover:bg-white text-[#1884F7] group-hover:text-[#0F75E8] px-2.5 py-1.5 sm:px-3 sm:py-2 text-xs font-black shadow-sm transition-all duration-200 group-hover:shadow-md group-hover:translate-x-0.5">
-                    <span>AI 추천받기</span>
-                    <ChevronRight className="size-3.5 stroke-[2.5] transition-transform duration-200 group-hover:translate-x-0.5" />
+                  <span
+                    className="w-8 h-8 rounded-full bg-white/80 shadow-sm flex items-center justify-center border border-sky-100 text-sky-500 group-hover:bg-white group-hover:text-[#1884F7] group-hover:border-sky-200 hover:scale-105 transition-all duration-200"
+                    title="Popple Lens 시작하기"
+                  >
+                    <Camera className="size-4 stroke-[2.2]" />
                   </span>
                 </div>
               </div>
