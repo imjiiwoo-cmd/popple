@@ -739,28 +739,32 @@ export function HomeScreen({
                 }
               }}
               aria-label="Popple Lens - 사진 한 장으로 찾는 취향 맞춤 행사"
-              className="group relative cursor-pointer overflow-hidden rounded-2xl bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-sky-50 via-sky-50/40 to-transparent p-4 sm:p-5 transition-all duration-200 active:scale-[0.99]"
+              className="group relative cursor-pointer overflow-hidden rounded-2xl bg-sky-50/90 p-4 sm:p-5 transition-all duration-200 active:scale-[0.99]"
             >
               <div className="relative flex items-center justify-between gap-3">
                 <div className="flex flex-col min-w-0">
-                  <div className="flex items-center gap-1.5 mb-1.5">
-                    <span className="inline-flex items-center gap-1.5 bg-white/80 text-sky-600 text-sm font-bold px-3 py-1 rounded-full border border-sky-100/70 shadow-2xs">
-                      🫧 POPPLE LENS
+                  <div className="flex items-center mb-2.5 sm:mb-3">
+                    <span className="inline-flex items-center gap-1.5 bg-white text-[#1884F7] text-xs sm:text-[13px] font-bold px-3 py-1 rounded-full shadow-2xs">
+                      <Sparkles className="size-3.5 fill-[#1884F7] text-[#1884F7]" />
+                      POPPLE LENS
                     </span>
                   </div>
 
-                  <h3 className="text-base sm:text-lg font-bold text-slate-800 tracking-tight leading-snug">
+                  <h3 className="text-base sm:text-lg font-bold text-slate-900 tracking-tight leading-snug">
                     사진 한 장으로 찾는 취향 맞춤 행사
                   </h3>
+                  <p className="text-xs sm:text-[13px] text-slate-500 mt-1 leading-normal">
+                    사진을 올리면 딱 맞는 행사를 찾아드려요
+                  </p>
                 </div>
 
-                {/* 우측 이동 버튼: 꺾쇠 아이콘이 포함된 원형 반투명 버튼 */}
-                <div className="shrink-0">
+                {/* 우측 카메라 원형 액션 버튼: Y축 가운데 정렬, 단독 배치 (업로드 텍스트 제외) */}
+                <div className="shrink-0 flex items-center">
                   <span
-                    className="w-10 h-10 sm:w-11 sm:h-11 rounded-full bg-white/90 shadow-sm flex items-center justify-center border border-sky-100/60 text-sky-500 group-hover:bg-white group-hover:text-[#1884F7] group-hover:border-sky-200 group-hover:translate-x-0.5 hover:scale-105 transition-all duration-200"
+                    className="size-11 sm:size-12 rounded-full bg-white shadow-md flex items-center justify-center text-[#1884F7] group-hover:scale-105 group-hover:shadow-lg transition-all duration-200"
                     title="Popple Lens 시작하기"
                   >
-                    <ChevronRight className="size-5 sm:size-5.5 stroke-[2.2]" />
+                    <Camera className="size-5 sm:size-5.5 text-[#1884F7] stroke-[2.2]" />
                   </span>
                 </div>
               </div>
