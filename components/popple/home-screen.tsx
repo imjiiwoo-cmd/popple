@@ -774,17 +774,12 @@ export function HomeScreen({
               </div>
             </section>
 
-            {/* 1번: WEEKLY RANKING 이번 주 가장 핫한 축제 */}
-            <section aria-labelledby="section-weekly" className="flex flex-col gap-2.5">
-              <div className="flex items-end justify-between">
-                <div>
-                  <span className="text-[11px] font-black text-[#1884F7] tracking-wider uppercase">
-                    WEEKLY RANKING
-                  </span>
-                  <h2 id="section-weekly" className="text-xl font-black text-slate-900">
-                    이번 주 가장 <span className="text-[#1884F7]">핫한</span> 축제
-                  </h2>
-                </div>
+            {/* 1번: 이번 주 가장 핫한 축제 */}
+            <section aria-labelledby="section-weekly" className="flex flex-col">
+              <div className="flex items-center justify-between mb-3">
+                <h2 id="section-weekly" className="text-xl font-black text-slate-900">
+                  <span className="text-blue-500 font-bold">이번 주</span> 가장 핫한 축제
+                </h2>
                 <button
                   type="button"
                   onClick={() => router.push('/ranking?type=weekly')}
@@ -946,17 +941,12 @@ export function HomeScreen({
               </div>
             </section>
 
-            {/* 3번: LIVE NOW 실시간 인기 상승 행사 (당일 자정 이후 조회수 랭킹) */}
-            <section aria-labelledby="section-live" className="flex flex-col gap-2.5">
-              <div className="flex items-end justify-between">
-                <div>
-                  <span className="text-[11px] font-black text-[#1884F7] tracking-wider uppercase">
-                    LIVE NOW
-                  </span>
-                  <h2 id="section-live" className="text-xl font-black text-slate-900">
-                    실시간 인기 상승 행사
-                  </h2>
-                </div>
+            {/* 3번: 실시간 인기 상승 행사 (당일 자정 이후 조회수 랭킹) */}
+            <section aria-labelledby="section-live" className="flex flex-col mt-2 sm:mt-3">
+              <div className="flex items-center justify-between mb-3">
+                <h2 id="section-live" className="text-xl font-black text-slate-900">
+                  <span className="text-blue-500 font-bold">실시간</span> 인기 상승 행사
+                </h2>
                 <button
                   type="button"
                   onClick={() => router.push('/ranking?type=daily')}
@@ -1020,17 +1010,12 @@ export function HomeScreen({
               </div>
             </section>
 
-            {/* 4번: REAL REVIEWS 팝플러의 생생 방문기 (실시간 방문 후기 포토 피드) */}
-            <section aria-labelledby="section-reviews" className="flex flex-col gap-3">
-              <div className="flex items-end justify-between">
-                <div>
-                  <span className="text-[11px] font-black text-[#1884F7] tracking-wider uppercase">
-                    REAL REVIEWS
-                  </span>
-                  <h2 id="section-reviews" className="text-xl font-black text-slate-900 tracking-tight">
-                    팝플러의 생생 방문기
-                  </h2>
-                </div>
+            {/* 4번: 팝플러의 생생 방문기 (실시간 방문 후기 포토 피드) */}
+            <section aria-labelledby="section-reviews" className="flex flex-col">
+              <div className="flex items-center justify-between mb-3">
+                <h2 id="section-reviews" className="text-xl font-black text-slate-900 tracking-tight">
+                  팝플러의 생생 방문기
+                </h2>
                 <button
                   type="button"
                   onClick={() => {
@@ -1040,7 +1025,7 @@ export function HomeScreen({
                       router.push('/community')
                     }
                   }}
-                  className="text-xs font-bold text-slate-400 hover:text-[#1884F7] flex items-center gap-0.5 transition-colors group"
+                  className="text-xs font-bold text-slate-400 hover:text-[#1884F7] flex items-center gap-0.5 transition-colors group cursor-pointer"
                   title="커뮤니티 후기 더보기"
                 >
                   <span>더보기</span>
