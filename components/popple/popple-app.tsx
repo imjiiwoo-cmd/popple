@@ -512,14 +512,9 @@ export function PoppleApp({
 
             {lensStatus === 'idle' && (
               <div className="flex flex-col gap-4">
-                <div className="flex items-center justify-between gap-1.5 px-0.5">
-                  <span className="text-xs font-bold text-muted-foreground shrink-0">
-                    행사 필터링
-                  </span>
-                  <div className="flex items-center gap-1.5 shrink-0">
-                    <EventTypeSelect value={eventType} onChange={setEventType} />
-                    <AreaSelect value={areaCode} onChange={setAreaCode} />
-                  </div>
+                <div className="flex items-center justify-end gap-2 px-0.5">
+                  <EventTypeSelect value={eventType} onChange={setEventType} />
+                  <AreaSelect value={areaCode} onChange={setAreaCode} />
                 </div>
 
                 <ImageInputZone
@@ -538,7 +533,7 @@ export function PoppleApp({
                   type="button"
                   onClick={handleRecommend}
                   disabled={!file}
-                  className="h-14 rounded-2xl text-base font-bold shadow-lg shadow-primary/30 disabled:shadow-none"
+                  className="mt-1 h-14 rounded-2xl text-base font-bold shadow-lg shadow-primary/30 disabled:shadow-none"
                 >
                   <Sparkles className="size-5" aria-hidden="true" />
                   맞춤 행사 추천받기

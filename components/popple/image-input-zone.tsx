@@ -5,8 +5,6 @@ import { Camera, Images, Upload, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 
-const EXAMPLE_TAGS = ['뮤직페스티벌', '팝업스토어', '야시장', '굿즈', '불꽃축제']
-
 type ImageInputZoneProps = {
   previewUrl: string | null
   onSelect: (file: File) => void
@@ -128,17 +126,6 @@ export function ImageInputZone({ previewUrl, onSelect, onClear }: ImageInputZone
           e.target.value = ''
         }}
       />
-
-      <ul className="flex flex-wrap gap-2" aria-label="추천 가능한 행사 예시">
-        {EXAMPLE_TAGS.map((tag) => (
-          <li
-            key={tag}
-            className="rounded-full border border-primary/30 bg-card px-3 py-1 text-xs font-medium text-primary"
-          >
-            #{tag}
-          </li>
-        ))}
-      </ul>
     </div>
   )
 }

@@ -69,7 +69,6 @@ export function AreaSelect({ value, onChange, disabled = false }: AreaSelectProp
           disabled && 'opacity-50 cursor-not-allowed',
         )}
       >
-        <span className="text-xs">📍</span>
         <span className="text-muted-foreground font-normal">지역:</span>
         <span className="font-bold text-foreground">{selectedOption.shortLabel}</span>
         <ChevronDown

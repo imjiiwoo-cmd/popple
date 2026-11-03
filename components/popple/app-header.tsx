@@ -30,8 +30,7 @@ export function AppHeader({ onBack, isResult = false }: AppHeaderProps) {
         </h1>
       </div>
 
-      <div className="flex flex-col gap-1">
-        <span className="text-xs font-bold tracking-widest text-primary">POPPLE LENS</span>
+      <div className="flex flex-col gap-1 pt-1">
         <p className="text-balance text-xl font-bold leading-snug text-foreground">
           사진 한 장으로 찾는 <span className="text-primary">맞춤</span> 행사
         </p>
