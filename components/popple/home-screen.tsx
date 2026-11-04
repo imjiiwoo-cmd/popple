@@ -497,7 +497,7 @@ export function HomeScreen({
         {/* 테마 큐레이션 전용 리스트 화면 (PICK YOUR MOOD 클릭 시 전환) */}
         {activeTheme ? (
           <section className="flex flex-col gap-4 animate-in fade-in duration-200">
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between pl-2.5 sm:pl-3 pr-1 mb-1">
               <div>
                 <span className="text-[11px] font-bold text-[#1884F7] tracking-wider uppercase">
                   THEME CURATION
@@ -611,7 +611,7 @@ export function HomeScreen({
           </section>
         ) : isSearchActive ? (
           <section className="flex flex-col gap-4 animate-in fade-in duration-200">
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between pl-2.5 sm:pl-3 pr-1 mb-1">
               <div>
                 <span className="text-[11px] font-bold text-[#1884F7] tracking-wider uppercase">
                   {searchThemeName ? `${searchThemeName} 테마 추천` : 'SEARCH RESULT'}
@@ -739,7 +739,7 @@ export function HomeScreen({
                 }
               }}
               aria-label="Popple Lens - 사진 한 장으로 찾는 취향 맞춤 행사"
-              className="group relative cursor-pointer overflow-hidden rounded-2xl bg-sky-50/90 p-4 sm:p-5 transition-all duration-200 active:scale-[0.99]"
+              className="group relative cursor-pointer overflow-hidden rounded-2xl bg-sky-50/90 px-5 py-4 sm:p-5 transition-all duration-200 active:scale-[0.99]"
             >
               <div className="relative flex items-center justify-between gap-3">
                 <div className="flex flex-col min-w-0">
@@ -772,7 +772,7 @@ export function HomeScreen({
 
             {/* 1번: 이번 주 가장 핫한 축제 */}
             <section aria-labelledby="section-weekly" className="flex flex-col">
-              <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center justify-between pl-2.5 sm:pl-3 pr-1 mb-3">
                 <h2 id="section-weekly" className="text-xl font-black text-slate-900">
                   <span className="text-blue-500 font-bold">이번 주</span> 가장 핫한 축제
                 </h2>
@@ -928,7 +928,7 @@ export function HomeScreen({
               className="group relative overflow-hidden rounded-2xl bg-white border border-slate-200/80 shadow-sm flex items-center justify-between cursor-pointer active:scale-[0.99] hover:border-slate-300 transition-all"
             >
               {/* 좌측 콘텐츠 영역 */}
-              <div className="flex-1 py-3.5 pl-4 pr-2 min-w-0">
+              <div className="flex-1 py-3.5 pl-5 pr-2 min-w-0">
                 <span className="text-sky-600 bg-sky-50 text-[11px] font-semibold px-2 py-0.5 rounded-full inline-block">
                   상생 혜택
                 </span>
@@ -963,7 +963,7 @@ export function HomeScreen({
 
             {/* 3번: 실시간 인기 상승 행사 (당일 자정 이후 조회수 랭킹) */}
             <section aria-labelledby="section-live" className="flex flex-col mt-2 sm:mt-3">
-              <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center justify-between pl-2.5 sm:pl-3 pr-1 mb-3">
                 <h2 id="section-live" className="text-xl font-black text-slate-900">
                   <span className="text-blue-500 font-bold">실시간</span> 인기 상승 행사
                 </h2>
@@ -1032,7 +1032,7 @@ export function HomeScreen({
 
             {/* 4번: 팝플러의 생생 방문기 (실시간 방문 후기 포토 피드) */}
             <section aria-labelledby="section-reviews" className="flex flex-col">
-              <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center justify-between pl-2.5 sm:pl-3 pr-1 mb-3">
                 <h2 id="section-reviews" className="text-xl font-black text-slate-900 tracking-tight">
                   팝플러의 생생 방문기
                 </h2>

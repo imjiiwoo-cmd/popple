@@ -663,7 +663,7 @@ export function EventsCalendarScreen({
     <div className="relative flex flex-col min-h-dvh bg-[#F8FAFC] text-slate-900 pb-28">
       {/* 1. 상단 타이틀 및 월 선택 드롭다운 영역 */}
       <header className="px-5 pt-5 sm:pt-6 pb-4">
-        <div className="mx-auto max-w-md flex items-center justify-between gap-3">
+        <div className="mx-auto max-w-md flex items-center justify-between gap-3 pl-2.5 sm:pl-3 pr-1">
           <h1 className="text-[22px] sm:text-[23px] font-black text-slate-900 tracking-tight">
             이번 주, 어디로 갈까요?
           </h1>
@@ -712,7 +712,7 @@ export function EventsCalendarScreen({
       <section className="px-5">
         <div className="mx-auto max-w-md rounded-3xl bg-white border border-slate-100 p-4 shadow-[0_4px_20px_rgba(0,0,0,0.03)]">
           {/* 상단: 주차 타이틀 및 우측 범례(지역축제 빨간 점) */}
-          <div className="flex items-center justify-between mb-3 px-1">
+          <div className="flex items-center justify-between mb-3 pl-2.5 sm:pl-3 pr-1.5">
             <span className="text-[15px] font-black text-slate-800">
               {getWeekOfMonthText(currentMonday)}
             </span>
@@ -982,7 +982,7 @@ export function EventsCalendarScreen({
               </div>
             </div>
 
-            <div className="flex items-baseline justify-between mt-1">
+            <div className="flex items-baseline justify-between mt-1 pl-2.5 sm:pl-3 pr-1">
               <h2 className="text-[21px] font-black text-slate-900 tracking-tight">
                 {viewAllWeek
                   ? '이번 주 진행 중인 행사'
@@ -1034,7 +1034,7 @@ export function EventsCalendarScreen({
                     <article
                       key={ev.id}
                       onClick={() => onSelectEvent(ev)}
-                      className="group relative bg-white rounded-3xl p-3 border border-slate-100 shadow-[0_4px_16px_rgba(0,0,0,0.03)] flex gap-3.5 hover:shadow-md transition-all active:scale-[0.99] cursor-pointer"
+                      className="group relative bg-white rounded-3xl p-3.5 sm:p-4 border border-slate-100 shadow-[0_4px_16px_rgba(0,0,0,0.03)] flex gap-3.5 hover:shadow-md transition-all active:scale-[0.99] cursor-pointer"
                     >
                       {/* 좌측: 둥근 모서리의 세로형 포스터 썸네일 이미지 또는 깔끔한 중립 Fallback UI */}
                       <div className="relative w-[112px] min-w-[112px] h-[190px] rounded-2xl overflow-hidden bg-slate-100 shrink-0 border border-slate-100/80">
@@ -1153,7 +1153,7 @@ export function EventsCalendarScreen({
                     className="flex flex-col scroll-mt-24"
                   >
                     {/* 날짜 오름차순 헤더 (예: 10.07 화요일 [선택한 날짜]) */}
-                    <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center justify-between mb-3 pl-2.5 sm:pl-3 pr-1">
                       <div className="flex items-baseline gap-2">
                         <span className="text-[23px] font-black text-slate-900 tracking-tight">
                           {group.monthDayStr}
@@ -1190,7 +1190,7 @@ export function EventsCalendarScreen({
                             <article
                               key={`${group.dateKey}_${ev.id}`}
                               onClick={() => onSelectEvent(ev)}
-                              className="group relative bg-white rounded-3xl p-3 border border-slate-100 shadow-[0_4px_16px_rgba(0,0,0,0.03)] flex gap-3.5 hover:shadow-md transition-all active:scale-[0.99] cursor-pointer"
+                              className="group relative bg-white rounded-3xl p-3.5 sm:p-4 border border-slate-100 shadow-[0_4px_16px_rgba(0,0,0,0.03)] flex gap-3.5 hover:shadow-md transition-all active:scale-[0.99] cursor-pointer"
                             >
                               {/* 좌측: 둥근 모서리의 세로형 포스터 썸네일 이미지 */}
                               <div className="relative w-[112px] min-w-[112px] h-[190px] rounded-2xl overflow-hidden bg-slate-100 shrink-0">
