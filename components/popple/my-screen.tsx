@@ -650,18 +650,13 @@ export function MyScreen({
 
         {/* [2. 섹션 1: 내가 찜한 축제 (북마크 리스트) - 최상단] */}
         <section aria-labelledby="section-bookmarks" className="flex flex-col gap-2.5">
-          <div className="flex items-end justify-between">
-            <div>
-              <span className="text-[11px] font-black text-[#1884F7] tracking-wider uppercase">
-                MY FAVORITES
+          <div className="flex items-center justify-between">
+            <h2 id="section-bookmarks" className="text-lg font-black text-slate-900">
+              내가 찜한 축제{' '}
+              <span className="text-sm font-semibold text-slate-400">
+                ({bookmarkedEvents.length})
               </span>
-              <h2 id="section-bookmarks" className="text-lg font-black text-slate-900">
-                내가 찜한 축제{' '}
-                <span className="text-sm font-semibold text-slate-400">
-                  ({bookmarkedEvents.length})
-                </span>
-              </h2>
-            </div>
+            </h2>
             <button
               type="button"
               onClick={onOpenEvents}
@@ -733,16 +728,11 @@ export function MyScreen({
         </section>
 
         {/* [3. 섹션 2: 일상기록 (포토 캘린더 다이어리)] */}
-        <section aria-labelledby="section-diary" className="flex flex-col gap-3">
+        <section aria-labelledby="section-diary" className="flex flex-col gap-2.5">
           <div className="flex items-center justify-between">
-            <div>
-              <span className="text-[11px] font-black text-[#1884F7] tracking-wider uppercase">
-                PHOTO DIARY
-              </span>
-              <h2 id="section-diary" className="text-lg font-black text-slate-900">
-                일상기록 (포토 캘린더)
-              </h2>
-            </div>
+            <h2 id="section-diary" className="text-lg font-black text-slate-900">
+              일상기록 (포토 캘린더)
+            </h2>
 
             {/* [📸 이번 달 축제 달력 커뮤니티에 공유하기] 버튼 (요건 2 & 3) */}
             <button
@@ -863,9 +853,6 @@ export function MyScreen({
         {/* [4. 섹션 3: 혜택 & 쿠폰함] */}
         <section aria-labelledby="section-coupon" className="flex flex-col gap-2.5">
           <div>
-            <span className="text-[11px] font-black text-[#1884F7] tracking-wider uppercase">
-              COUPON & BENEFIT
-            </span>
             <h2 id="section-coupon" className="text-lg font-black text-slate-900">
               혜택 & 쿠폰함
             </h2>
