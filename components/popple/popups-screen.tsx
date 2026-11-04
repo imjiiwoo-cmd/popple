@@ -176,17 +176,9 @@ export function PopupsScreen({
               </button>
               <span
                 onClick={onOpenLens}
-                className="cursor-pointer absolute -top-1.5 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full bg-blue-500 text-white px-3 py-1 text-[8.5px] font-black shadow-xs tracking-tight transition-transform hover:scale-105 active:scale-95 select-none inline-flex items-center gap-1.5 overflow-visible"
+                className="cursor-pointer absolute -top-2 left-1/2 -translate-x-1/2 whitespace-nowrap inline-flex items-center justify-center rounded-full bg-blue-500 text-white text-[11px] font-bold px-2.5 py-0.5 shadow-sm tracking-tight transition-transform hover:scale-105 active:scale-95 select-none animate-pulse"
               >
-                <span>AI 렌즈</span>
-                <Image
-                  src="/images/popple-bubble-flat.png"
-                  alt="버블"
-                  width={16}
-                  height={16}
-                  className="w-4 h-4 shrink-0 object-contain inline-block filter brightness-0 invert [filter:brightness(0)_invert(1)]"
-                  style={{ filter: 'brightness(0) invert(1)' }}
-                />
+                AI 렌즈
               </span>
             </div>
 
