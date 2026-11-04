@@ -303,9 +303,9 @@ export function CommunityScreen({
 
       {/* 2. 메인 컨텐츠 영역 */}
       <main className="mx-auto w-full max-w-md px-4 pt-4 sm:pt-6 pb-3 flex flex-col gap-4">
-        {/* [1. 상단 카테고리 필터 탭 (가로 스크롤 둥근 칩 버튼)] */}
-        <section aria-label="커뮤니티 카테고리 필터" className="overflow-x-auto scrollbar-none -mx-4 px-4 py-1">
-          <div className="flex items-center gap-2">
+        {/* [1. 상단 카테고리 필터 탭 (중앙 정렬 단일 세그먼트 컨트롤)] */}
+        <section aria-label="커뮤니티 카테고리 필터" className="flex justify-center items-center w-full">
+          <div className="flex items-center justify-center bg-slate-100 rounded-full p-1 border border-slate-200/60 mx-auto w-fit max-w-full overflow-x-auto scrollbar-none shadow-2xs">
             {CATEGORY_TABS.map((tab) => {
               const isSelected = selectedCategory === tab.id
               return (
@@ -313,13 +313,13 @@ export function CommunityScreen({
                   key={tab.id}
                   type="button"
                   onClick={() => setSelectedCategory(tab.id)}
-                  className={`shrink-0 flex items-center gap-1.5 px-3.5 py-2 rounded-full text-xs font-bold transition-all select-none active:scale-95 ${
+                  className={`shrink-0 flex items-center gap-1.5 px-3.5 py-1.5 text-xs rounded-full transition-all whitespace-nowrap cursor-pointer select-none active:scale-95 ${
                     isSelected
-                      ? 'bg-[#1884F7] text-white shadow-xs ring-2 ring-[#1884F7]/25'
-                      : 'bg-white text-slate-600 border border-slate-200/80 hover:bg-slate-50'
+                      ? 'bg-blue-500 text-white font-semibold shadow-sm'
+                      : 'bg-transparent text-slate-500 hover:text-slate-700 font-medium'
                   }`}
                 >
-                  <span>{tab.icon}</span>
+                  <span className="text-[11px] leading-none">{tab.icon}</span>
                   <span>{tab.label}</span>
                 </button>
               )
