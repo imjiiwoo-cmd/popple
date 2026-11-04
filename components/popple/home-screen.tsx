@@ -470,15 +470,16 @@ export function HomeScreen({
               {/* 상단 미니 태그 뱃지 ("AI 렌즈" + 플랫 버블 아이콘) */}
               <span
                 onClick={onOpenLens}
-                className="cursor-pointer absolute -top-1.5 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full bg-blue-500 px-2 py-0.5 text-[8.5px] font-black text-white shadow-xs tracking-tight transition-transform hover:scale-105 active:scale-95 select-none animate-pulse inline-flex items-center gap-1"
+                className="cursor-pointer absolute -top-1.5 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full bg-blue-500 text-white px-3 py-1 text-[8.5px] font-black shadow-xs tracking-tight transition-transform hover:scale-105 active:scale-95 select-none animate-pulse inline-flex items-center gap-1.5 overflow-visible"
               >
                 <span>AI 렌즈</span>
                 <Image
                   src="/images/popple-bubble-flat.png"
                   alt="버블"
-                  width={14}
-                  height={14}
-                  className="size-3.5 object-contain inline-block brightness-0 invert"
+                  width={16}
+                  height={16}
+                  className="w-4 h-4 shrink-0 object-contain inline-block filter brightness-0 invert [filter:brightness(0)_invert(1)]"
+                  style={{ filter: 'brightness(0) invert(1)' }}
                 />
               </span>
             </div>
@@ -753,7 +754,7 @@ export function HomeScreen({
                         alt="버블"
                         width={16}
                         height={16}
-                        className="size-4 object-contain inline-block"
+                        className="w-4 h-4 shrink-0 object-contain inline-block"
                       />
                       <span>POPPLE LENS</span>
                     </span>

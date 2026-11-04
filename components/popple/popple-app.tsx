@@ -541,7 +541,8 @@ export function PoppleApp({
                     alt="버블"
                     width={20}
                     height={20}
-                    className="size-5 object-contain brightness-0 invert"
+                    className="size-5 shrink-0 object-contain filter brightness-0 invert [filter:brightness(0)_invert(1)]"
+                    style={{ filter: 'brightness(0) invert(1)' }}
                   />
                   맞춤 행사 추천받기
                 </Button>
