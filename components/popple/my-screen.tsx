@@ -492,39 +492,8 @@ export function MyScreen({
 
   return (
     <div className="relative flex flex-col min-h-dvh bg-slate-50 text-slate-900 pb-24">
-      {/* 1. 상단 헤더 */}
-      <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-slate-100 px-4 py-2.5 shadow-2xs">
-        <div className="mx-auto max-w-md flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <h1 className="text-lg font-black text-slate-900">마이페이지</h1>
-          </div>
-          {currentUser ? (
-            <button
-              type="button"
-              onClick={handleOpenProfileModal}
-              className="text-xs font-bold text-[#1884F7] hover:text-[#0F75E8] flex items-center gap-1 bg-sky-50 px-2.5 py-1 rounded-full border border-sky-100 transition-colors"
-            >
-              <Edit3 className="size-3.5" />
-              <span>프로필 수정</span>
-            </button>
-          ) : (
-            <button
-              type="button"
-              onClick={() => {
-                setAuthModalTab('login')
-                setIsAuthModalOpen(true)
-              }}
-              className="text-xs font-bold text-[#1884F7] hover:text-[#0F75E8] flex items-center gap-1.5 bg-sky-50 hover:bg-sky-100 px-3 py-1.5 rounded-full border border-sky-100 transition-colors"
-            >
-              <LogIn className="size-3.5" />
-              <span>로그인</span>
-            </button>
-          )}
-        </div>
-      </header>
-
-      {/* 2. 메인 컨텐츠 영역 */}
-      <main className="mx-auto w-full max-w-md px-4 py-4 flex flex-col gap-6">
+      {/* 메인 컨텐츠 영역 (최상단부터 프로필 카드 시작) */}
+      <main className="mx-auto w-full max-w-md px-4 pt-4 sm:pt-6 pb-4 flex flex-col gap-6">
         {/* [1. 상단 프로필 영역] */}
         <section aria-label="프로필 요약" className="rounded-3xl bg-white p-5 shadow-xs border border-slate-100 flex flex-col gap-3.5">
           {currentUser ? (
@@ -650,7 +619,7 @@ export function MyScreen({
 
         {/* [2. 섹션 1: 내가 찜한 축제 (북마크 리스트) - 최상단] */}
         <section aria-labelledby="section-bookmarks" className="flex flex-col gap-2.5">
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between pl-2.5 sm:pl-3 pr-1">
             <h2 id="section-bookmarks" className="text-lg font-black text-slate-900">
               내가 찜한 축제{' '}
               <span className="text-sm font-semibold text-slate-400">
@@ -729,7 +698,7 @@ export function MyScreen({
 
         {/* [3. 섹션 2: 일상기록 (포토 캘린더 다이어리)] */}
         <section aria-labelledby="section-diary" className="flex flex-col gap-2.5">
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between pl-2.5 sm:pl-3 pr-1">
             <h2 id="section-diary" className="text-lg font-black text-slate-900">
               일상기록 (포토 캘린더)
             </h2>
@@ -747,8 +716,8 @@ export function MyScreen({
 
           {/* 월간 미니 캘린더 카드 */}
           <div className="rounded-3xl border border-slate-200/80 bg-white p-4 shadow-xs flex flex-col gap-3">
-            {/* 캘린더 상단 월 표시 및 안내 */}
-            <div className="flex items-center justify-between px-1">
+            {/* 캘린더 상단 월 표시 및 안내 (좌측 패딩 늘려 둥근 카드 테두리와 정돈) */}
+            <div className="flex items-center justify-between pl-4 sm:pl-5 pr-2 pt-0.5">
               <span className="text-sm font-black text-slate-900">
                 {calendarYear}년 {calendarMonth}월
               </span>
@@ -852,7 +821,7 @@ export function MyScreen({
 
         {/* [4. 섹션 3: 혜택 & 쿠폰함] */}
         <section aria-labelledby="section-coupon" className="flex flex-col gap-2.5">
-          <div>
+          <div className="pl-2.5 sm:pl-3">
             <h2 id="section-coupon" className="text-lg font-black text-slate-900">
               혜택 & 쿠폰함
             </h2>
