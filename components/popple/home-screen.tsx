@@ -927,13 +927,11 @@ export function HomeScreen({
               aria-label="상생 혜택 쿠폰 받기"
               className="group relative overflow-hidden rounded-2xl bg-white border border-slate-200/80 shadow-sm flex items-center justify-between cursor-pointer active:scale-[0.99] hover:border-slate-300 transition-all"
             >
-              {/* 좌측 콘텐츠 영역 (뱃지 + 메인 타이틀 세로 중앙 정렬) */}
-              <div className="flex-1 py-4 pl-5 pr-2 min-w-0 flex flex-col justify-center gap-1.5">
-                <div>
-                  <span className="text-sky-600 bg-sky-50 text-xs font-bold px-2.5 py-1 rounded-full inline-block">
-                    상생 혜택
-                  </span>
-                </div>
+              {/* 좌측 콘텐츠 영역 (뱃지 + 메인 타이틀 수직 좌측 정렬) */}
+              <div className="flex-1 py-4 pl-5 pr-2 min-w-0 flex flex-col justify-center items-start gap-1.5">
+                <span className="text-blue-500 bg-blue-50/80 text-sm font-bold px-3 py-1 rounded-full inline-flex items-center -ml-0.5">
+                  상생 혜택
+                </span>
                 <p className="text-slate-900 font-bold text-base leading-snug break-keep">
                   축제 즐기고, 인근 맛집·카페 할인 받기
                 </p>
