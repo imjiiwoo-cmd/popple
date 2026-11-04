@@ -174,7 +174,7 @@ export function PopupsScreen({
               >
                 <Camera className="size-5 stroke-[2.2]" />
               </button>
-              <span className="absolute -top-1.5 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full bg-gradient-to-r from-[#1884F7] to-indigo-600 px-1.5 py-0.2 text-[8px] font-black text-white shadow-xs tracking-tight">
+              <span className="absolute -top-1.5 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full bg-blue-500 px-1.5 py-0.2 text-[8px] font-black text-white shadow-xs tracking-tight">
                 AI 렌즈 ✨
               </span>
             </div>

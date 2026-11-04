@@ -465,16 +465,12 @@ export function HomeScreen({
                 className="group relative flex items-center justify-center size-9 rounded-full bg-gradient-to-br from-sky-50 to-blue-100/70 text-[#1884F7] ring-1.5 ring-[#1884F7]/30 hover:ring-[#1884F7] hover:bg-sky-100 active:scale-95 transition-all shadow-2xs"
               >
                 <Camera className="size-5 stroke-[2.2] transition-transform duration-200 group-hover:scale-110" />
-                <span className="absolute -top-0.5 -right-0.5 flex size-2">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#1884F7] opacity-75" />
-                  <span className="relative inline-flex rounded-full size-2 bg-[#1884F7]" />
-                </span>
               </button>
 
               {/* 상단 미니 태그 뱃지 ("AI 렌즈 ✨") */}
               <span
                 onClick={onOpenLens}
-                className="cursor-pointer absolute -top-1.5 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full bg-gradient-to-r from-[#1884F7] to-indigo-600 px-1.5 py-0.2 text-[8px] font-black text-white shadow-xs tracking-tight transition-transform hover:scale-105 active:scale-95 select-none animate-pulse"
+                className="cursor-pointer absolute -top-1.5 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full bg-blue-500 px-1.5 py-0.2 text-[8px] font-black text-white shadow-xs tracking-tight transition-transform hover:scale-105 active:scale-95 select-none animate-pulse"
               >
                 AI 렌즈 ✨
               </span>
