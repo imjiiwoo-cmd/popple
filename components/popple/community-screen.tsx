@@ -5,7 +5,6 @@ import Image from 'next/image'
 import {
   Search,
   Camera,
-  Bell,
   Heart,
   MessageCircle,
   Share2,
@@ -269,52 +268,8 @@ export function CommunityScreen({
 
   return (
     <div className="relative flex flex-col min-h-dvh bg-slate-50 text-slate-900 pb-24">
-      {/* 1. 상단 헤더 */}
-      <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-slate-100 px-4 py-2.5 shadow-2xs">
-        <div className="mx-auto max-w-md flex items-center justify-between gap-2.5">
-          {/* 좌측 Popple 로고 & 서브 타이틀 */}
-          <div
-            onClick={onOpenHome}
-            className="shrink-0 cursor-pointer flex items-center gap-2 self-center"
-            title="홈으로 가기"
-          >
-            <Image
-              src="/images/popple-logo.png"
-              alt="Popple"
-              width={88}
-              height={32}
-              priority
-              className="h-7 w-auto object-contain"
-            />
-            <span className="text-xs font-black text-[#1884F7] bg-sky-50 px-2 py-0.5 rounded-full border border-sky-100">
-              커뮤니티
-            </span>
-          </div>
-
-          {/* 우측 액션 버튼: [📷 렌즈 추천] & [🔔 알림] (Y축 완벽 가운데 정렬) */}
-          <div className="shrink-0 flex items-center gap-1 self-center">
-            <button
-              type="button"
-              onClick={onOpenLens}
-              aria-label="사진 기반 맞춤 행사 추천"
-              title="사진 기반 맞춤 추천"
-              className="relative flex items-center justify-center size-9 rounded-full text-slate-700 hover:bg-sky-50 hover:text-[#1884F7] transition-all cursor-pointer self-center"
-            >
-              <Camera className="size-5 stroke-[2]" />
-            </button>
-            <button
-              type="button"
-              aria-label="알림"
-              className="relative flex items-center justify-center size-9 rounded-full text-slate-700 hover:bg-slate-100 transition-colors cursor-pointer self-center"
-            >
-              <Bell className="size-5 stroke-[2]" />
-            </button>
-          </div>
-        </div>
-      </header>
-
-      {/* 2. 메인 컨텐츠 영역 */}
-      <main className="mx-auto w-full max-w-md px-4 pt-4 sm:pt-6 pb-3 flex flex-col gap-4">
+      {/* 메인 컨텐츠 영역 (최상단부터 카테고리 세그먼트 컨트롤 배치) */}
+      <main className="mx-auto w-full max-w-md px-4 pt-5 sm:pt-6 pb-4 flex flex-col gap-4">
         {/* [1. 상단 카테고리 필터 탭 (후기 카드 규격 일치 비례 세그먼트 컨트롤)] */}
         <section aria-label="커뮤니티 카테고리 필터" className="w-full">
           <div className="flex items-center justify-between bg-white border border-slate-200/80 shadow-sm rounded-2xl p-1.5 px-2 sm:px-3 w-full">
