@@ -662,24 +662,19 @@ export function EventsCalendarScreen({
   return (
     <div className="relative flex flex-col min-h-dvh bg-[#F8FAFC] text-slate-900 pb-28">
       {/* 1. 상단 타이틀 및 월 선택 드롭다운 영역 */}
-      <header className="px-5 pt-7 pb-4">
-        <div className="mx-auto max-w-md flex items-start justify-between">
-          <div>
-            <span className="text-[12px] font-black tracking-wider text-[#1884F7] uppercase">
-              EVENT CALENDAR
-            </span>
-            <h1 className="text-[23px] font-black text-slate-900 tracking-tight mt-0.5">
-              이번 주, 어디로 갈까요?
-            </h1>
-          </div>
+      <header className="px-5 pt-5 sm:pt-6 pb-4">
+        <div className="mx-auto max-w-md flex items-center justify-between gap-3">
+          <h1 className="text-[22px] sm:text-[23px] font-black text-slate-900 tracking-tight">
+            이번 주, 어디로 갈까요?
+          </h1>
 
-          {/* 상단 우측 월 선택 드롭다운 버튼 (예: [📅 10월 ∨]) */}
-          <div className="relative" ref={monthDropdownRef}>
+          {/* 상단 우측 월 선택 드롭다운 버튼 (예: [📅 11월 ∨]) */}
+          <div className="relative shrink-0" ref={monthDropdownRef}>
             <button
               type="button"
               onClick={() => setIsMonthDropdownOpen((prev) => !prev)}
               aria-expanded={isMonthDropdownOpen}
-              className="flex items-center gap-1.5 px-3.5 py-2 bg-white border border-slate-200/90 hover:border-slate-300 text-[#1884F7] font-black text-sm rounded-2xl shadow-xs transition-all active:scale-95"
+              className="flex items-center gap-1.5 px-3.5 py-2 bg-white border border-slate-200/90 hover:border-slate-300 text-[#1884F7] font-black text-sm rounded-2xl shadow-xs transition-all active:scale-95 cursor-pointer"
             >
               <CalendarIcon className="size-4 stroke-[2.2]" />
               <span>{selectedMonth}월</span>
@@ -953,14 +948,11 @@ export function EventsCalendarScreen({
       </section>
 
       {/* 4. 해당 주/선택일 진행 행사 리스트 렌더링 */}
-      <main className="px-5 mt-6 flex flex-col">
+      <main className="px-5 mt-5 sm:mt-6 flex flex-col">
         <div className="mx-auto w-full max-w-md">
           {/* 타이틀 헤더 및 보기 방식 토글 (선택일 vs 주간 전체) */}
           <div className="mb-4">
-            <div className="flex items-center justify-between">
-              <span className="text-[12px] font-black tracking-wider text-[#1884F7] uppercase">
-                {viewAllWeek ? 'THIS WEEK' : 'SELECTED DATE'}
-              </span>
+            <div className="flex items-center justify-end mb-2">
               {/* 보기 방식 토글 (선택일 / 주간 전체) */}
               <div className="flex items-center bg-slate-200/60 p-0.5 rounded-xl text-[11px] font-bold">
                 <button
