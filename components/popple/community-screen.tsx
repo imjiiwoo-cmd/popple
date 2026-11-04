@@ -19,12 +19,13 @@ import {
   Users,
   User,
   Check,
+  Sparkles,
+  MessageSquare,
 } from 'lucide-react'
 import {
   type CommunityCategory,
   type CommunityPost,
   type CommunityComment,
-  CATEGORY_TABS,
   CATEGORY_BADGES,
   getCommunityPosts,
   saveCommunityPosts,
@@ -36,6 +37,17 @@ import { MiniPhotoCalendar } from './mini-photo-calendar'
 import { getUserProfile, getPhotoDiaries } from '@/lib/mypage'
 import { supabase } from '@/lib/supabaseClient'
 import { subscribeToReviews } from '@/lib/constants/reviews'
+
+const COMMUNITY_TABS: {
+  id: CommunityCategory
+  label: string
+  icon: React.ComponentType<{ className?: string }>
+}[] = [
+  { id: 'all', label: '전체', icon: Sparkles },
+  { id: 'talk', label: '실시간', icon: MessageSquare },
+  { id: 'photo', label: '축제후기', icon: Camera },
+  { id: 'calendar', label: '달력공유', icon: Calendar },
+]
 
 interface CommunityScreenProps {
   onOpenHome: () => void
@@ -263,7 +275,7 @@ export function CommunityScreen({
           {/* 좌측 Popple 로고 & 서브 타이틀 */}
           <div
             onClick={onOpenHome}
-            className="shrink-0 cursor-pointer flex items-center gap-2"
+            className="shrink-0 cursor-pointer flex items-center gap-2 self-center"
             title="홈으로 가기"
           >
             <Image
@@ -279,21 +291,21 @@ export function CommunityScreen({
             </span>
           </div>
 
-          {/* 우측 액션 버튼: [📷 렌즈 추천] & [🔔 알림] */}
-          <div className="shrink-0 flex items-center gap-1">
+          {/* 우측 액션 버튼: [📷 렌즈 추천] & [🔔 알림] (Y축 완벽 가운데 정렬) */}
+          <div className="shrink-0 flex items-center gap-1 self-center">
             <button
               type="button"
               onClick={onOpenLens}
               aria-label="사진 기반 맞춤 행사 추천"
               title="사진 기반 맞춤 추천"
-              className="relative p-2 rounded-full text-slate-700 hover:bg-sky-50 hover:text-[#1884F7] transition-all"
+              className="relative flex items-center justify-center size-9 rounded-full text-slate-700 hover:bg-sky-50 hover:text-[#1884F7] transition-all cursor-pointer self-center"
             >
               <Camera className="size-5 stroke-[2]" />
             </button>
             <button
               type="button"
               aria-label="알림"
-              className="relative p-2 rounded-full text-slate-700 hover:bg-slate-100 transition-colors"
+              className="relative flex items-center justify-center size-9 rounded-full text-slate-700 hover:bg-slate-100 transition-colors cursor-pointer self-center"
             >
               <Bell className="size-5 stroke-[2]" />
             </button>
@@ -303,23 +315,28 @@ export function CommunityScreen({
 
       {/* 2. 메인 컨텐츠 영역 */}
       <main className="mx-auto w-full max-w-md px-4 pt-4 sm:pt-6 pb-3 flex flex-col gap-4">
-        {/* [1. 상단 카테고리 필터 탭 (후기 카드 규격 일치 전체 너비 세그먼트 컨트롤)] */}
+        {/* [1. 상단 카테고리 필터 탭 (후기 카드 규격 일치 비례 세그먼트 컨트롤)] */}
         <section aria-label="커뮤니티 카테고리 필터" className="w-full">
-          <div className="grid grid-cols-4 gap-1.5 bg-white border border-slate-200/80 shadow-sm rounded-2xl p-1.5 w-full">
-            {CATEGORY_TABS.map((tab) => {
+          <div className="flex items-center justify-between bg-white border border-slate-200/80 shadow-sm rounded-2xl p-1.5 px-2 sm:px-3 w-full">
+            {COMMUNITY_TABS.map((tab) => {
               const isSelected = selectedCategory === tab.id
+              const Icon = tab.icon
               return (
                 <button
                   key={tab.id}
                   type="button"
                   onClick={() => setSelectedCategory(tab.id)}
-                  className={`flex items-center justify-center gap-1 sm:gap-1.5 py-2.5 sm:py-3 px-1 text-xs sm:text-sm font-semibold tracking-tight rounded-xl transition-all whitespace-nowrap cursor-pointer select-none active:scale-95 ${
+                  className={`inline-flex items-center justify-center gap-1.5 py-2.5 sm:py-3 px-2.5 sm:px-3.5 text-xs sm:text-sm font-semibold tracking-tight rounded-xl transition-all whitespace-nowrap cursor-pointer select-none active:scale-95 ${
                     isSelected
                       ? 'bg-blue-500 text-white shadow-sm'
                       : 'bg-transparent text-slate-600 hover:bg-slate-50 hover:text-slate-900 font-medium'
                   }`}
                 >
-                  <span className="text-sm sm:text-base leading-none">{tab.icon}</span>
+                  <Icon
+                    className={`size-4 shrink-0 transition-colors ${
+                      isSelected ? 'text-white' : 'text-blue-500'
+                    }`}
+                  />
                   <span>{tab.label}</span>
                 </button>
               )
