@@ -703,11 +703,11 @@ export function MyScreen({
               일상기록 (포토 캘린더)
             </h2>
 
-            {/* [📸 이번 달 축제 달력 커뮤니티에 공유하기] 버튼 (요건 2 & 3) */}
+            {/* [📸 이번 달 축제 달력 커뮤니티에 공유하기] 버튼 */}
             <button
               type="button"
               onClick={handleOpenShareModal}
-              className="flex items-center gap-1.5 bg-gradient-to-r from-sky-500 to-[#1884F7] text-white text-xs font-bold px-3 py-1.5 rounded-full shadow-xs hover:opacity-95 active:scale-95 transition-all"
+              className="flex items-center gap-1.5 bg-blue-500 hover:bg-blue-600 active:scale-95 text-white text-xs font-semibold px-3.5 py-1.5 rounded-full shadow-xs transition-all cursor-pointer"
             >
               <Share2 className="size-3.5" />
               <span>축제 달력 공유</span>
