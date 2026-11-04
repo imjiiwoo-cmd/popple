@@ -14,7 +14,6 @@ import {
   X,
   ChevronUp,
   Image as ImageIcon,
-  Sparkles,
   Home,
   Calendar,
   Users,
@@ -303,42 +302,7 @@ export function CommunityScreen({
       </header>
 
       {/* 2. 메인 컨텐츠 영역 */}
-      <main className="mx-auto w-full max-w-md px-4 py-3 flex flex-col gap-4">
-        {/* 상단 안내 & 간편 글쓰기 유도 카드 */}
-        <div className="rounded-2xl bg-gradient-to-r from-sky-500 to-[#1884F7] p-4 text-white shadow-sm flex flex-col gap-2.5">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-1.5">
-              <Sparkles className="size-4 text-yellow-300" />
-              <span className="text-[11px] font-black tracking-wider uppercase text-sky-100">
-                실시간 축제 광장
-              </span>
-            </div>
-            <span className="text-[10px] font-bold bg-white/20 backdrop-blur-xs px-2 py-0.5 rounded-full">
-              LIVE SQUARE
-            </span>
-          </div>
-          <div>
-            <h2 className="text-base font-black leading-snug">
-              지금 현장은 어떤가요? 자유롭게 소통해요!
-            </h2>
-            <p className="text-xs text-sky-100 mt-0.5 font-medium">
-              대기 줄, 포토존 명당, 솔직한 방문 후기를 실시간으로 나눠보세요.
-            </p>
-          </div>
-
-          <button
-            type="button"
-            onClick={handleOpenWriteModal}
-            className="mt-1 flex items-center justify-between w-full bg-white text-slate-800 rounded-xl px-3.5 py-2.5 text-xs font-semibold shadow-xs hover:bg-slate-50 active:scale-[0.99] transition-all"
-          >
-            <span className="text-slate-400">축제 소식이나 궁금한 점을 적어보세요...</span>
-            <div className="flex items-center gap-1 text-[#1884F7] font-bold">
-              <span>글쓰기</span>
-              <Plus className="size-4 stroke-[2.5]" />
-            </div>
-          </button>
-        </div>
-
+      <main className="mx-auto w-full max-w-md px-4 pt-4 sm:pt-6 pb-3 flex flex-col gap-4">
         {/* [1. 상단 카테고리 필터 탭 (가로 스크롤 둥근 칩 버튼)] */}
         <section aria-label="커뮤니티 카테고리 필터" className="overflow-x-auto scrollbar-none -mx-4 px-4 py-1">
           <div className="flex items-center gap-2">
