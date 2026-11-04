@@ -177,11 +177,11 @@ export function PopupsScreen({
               <span className="absolute -top-1.5 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full bg-blue-500 px-2 py-0.5 text-[8.5px] font-black text-white shadow-xs tracking-tight inline-flex items-center gap-1">
                 <span>AI 렌즈</span>
                 <Image
-                  src="/images/bubble-lens-icon.png"
+                  src="/images/popple-bubble-flat.png"
                   alt="버블"
                   width={14}
                   height={14}
-                  className="size-3.5 object-contain inline-block"
+                  className="size-3.5 object-contain inline-block brightness-0 invert"
                 />
               </span>
             </div>

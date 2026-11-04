@@ -119,7 +119,7 @@ export function ResultCard({ result, onReset, onSelectEvent }: ResultCardProps) 
         {/* 연한 하늘색 배경 박스 (Sparkle 아이콘 + mood_headline + mood_summary) */}
         <div className="flex items-start gap-2.5 rounded-2xl bg-sky-50 dark:bg-sky-950/40 border border-sky-200/70 dark:border-sky-800/60 p-3.5 text-sky-950 dark:text-sky-100">
           <Image
-            src="/images/bubble-lens-icon.png"
+            src="/images/popple-bubble-flat.png"
             alt="버블"
             width={18}
             height={18}

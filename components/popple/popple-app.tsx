@@ -537,11 +537,11 @@ export function PoppleApp({
                   className="mt-1 h-14 rounded-2xl text-base font-bold shadow-lg shadow-primary/30 disabled:shadow-none"
                 >
                   <Image
-                    src="/images/bubble-lens-icon.png"
+                    src="/images/popple-bubble-flat.png"
                     alt="버블"
                     width={20}
                     height={20}
-                    className="size-5 object-contain"
+                    className="size-5 object-contain brightness-0 invert"
                   />
                   맞춤 행사 추천받기
                 </Button>
