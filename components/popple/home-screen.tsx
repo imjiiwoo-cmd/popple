@@ -467,12 +467,19 @@ export function HomeScreen({
                 <Camera className="size-5 stroke-[2.2] transition-transform duration-200 group-hover:scale-110" />
               </button>
 
-              {/* 상단 미니 태그 뱃지 ("AI 렌즈 ✨") */}
+              {/* 상단 미니 태그 뱃지 ("AI 렌즈" + 버블 아이콘) */}
               <span
                 onClick={onOpenLens}
-                className="cursor-pointer absolute -top-1.5 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full bg-blue-500 px-1.5 py-0.2 text-[8px] font-black text-white shadow-xs tracking-tight transition-transform hover:scale-105 active:scale-95 select-none animate-pulse"
+                className="cursor-pointer absolute -top-1.5 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full bg-blue-500 px-2 py-0.5 text-[8.5px] font-black text-white shadow-xs tracking-tight transition-transform hover:scale-105 active:scale-95 select-none animate-pulse inline-flex items-center gap-1"
               >
-                AI 렌즈 ✨
+                <span>AI 렌즈</span>
+                <Image
+                  src="/images/bubble-lens-icon.png"
+                  alt="버블"
+                  width={14}
+                  height={14}
+                  className="size-3.5 object-contain inline-block"
+                />
               </span>
             </div>
 
@@ -741,8 +748,14 @@ export function HomeScreen({
                 <div className="flex flex-col min-w-0">
                   <div className="flex items-center mb-2.5 sm:mb-3">
                     <span className="inline-flex items-center gap-1.5 bg-white text-[#1884F7] text-xs sm:text-[13px] font-bold px-3 py-1 rounded-full shadow-2xs">
-                      <Sparkles className="size-3.5 fill-[#1884F7] text-[#1884F7]" />
-                      POPPLE LENS
+                      <Image
+                        src="/images/bubble-lens-icon.png"
+                        alt="버블"
+                        width={18}
+                        height={18}
+                        className="size-4 sm:size-4.5 object-contain inline-block"
+                      />
+                      <span>POPPLE LENS</span>
                     </span>
                   </div>
 

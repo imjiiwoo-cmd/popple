@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import Image from 'next/image'
 import { Sparkles, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { supabase } from '@/lib/supabaseClient'
@@ -535,7 +536,13 @@ export function PoppleApp({
                   disabled={!file}
                   className="mt-1 h-14 rounded-2xl text-base font-bold shadow-lg shadow-primary/30 disabled:shadow-none"
                 >
-                  <Sparkles className="size-5" aria-hidden="true" />
+                  <Image
+                    src="/images/bubble-lens-icon.png"
+                    alt="버블"
+                    width={20}
+                    height={20}
+                    className="size-5 object-contain"
+                  />
                   맞춤 행사 추천받기
                 </Button>
               </div>

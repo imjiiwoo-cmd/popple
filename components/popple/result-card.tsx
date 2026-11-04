@@ -118,9 +118,12 @@ export function ResultCard({ result, onReset, onSelectEvent }: ResultCardProps) 
 
         {/* 연한 하늘색 배경 박스 (Sparkle 아이콘 + mood_headline + mood_summary) */}
         <div className="flex items-start gap-2.5 rounded-2xl bg-sky-50 dark:bg-sky-950/40 border border-sky-200/70 dark:border-sky-800/60 p-3.5 text-sky-950 dark:text-sky-100">
-          <Sparkles
-            className="mt-0.5 size-4 shrink-0 text-sky-600 dark:text-sky-400"
-            aria-hidden="true"
+          <Image
+            src="/images/bubble-lens-icon.png"
+            alt="버블"
+            width={18}
+            height={18}
+            className="mt-0.5 size-4.5 shrink-0 object-contain"
           />
           <div className="flex flex-col gap-1">
             <p className="text-sm font-bold text-sky-900 dark:text-sky-200 leading-snug">
