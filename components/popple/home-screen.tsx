@@ -903,7 +903,7 @@ export function HomeScreen({
               </div>
             </section>
 
-            {/* 2번: 블루 혜택 배너 (POPPLE ONLY) */}
+            {/* 2번: 화이트 티켓 바우처 카드 (오프라인 티켓 형태 상생 혜택 배너) */}
             <section
               onClick={() => {
                 if (onOpenCoupons) {
@@ -912,28 +912,52 @@ export function HomeScreen({
                   onOpenMy()
                 }
               }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault()
+                  if (onOpenCoupons) {
+                    onOpenCoupons()
+                  } else if (onOpenMy) {
+                    onOpenMy()
+                  }
+                }
+              }}
               role="button"
               tabIndex={0}
-              className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-[#0088FF] to-[#00A2FF] p-4 text-white shadow-sm flex items-center justify-between cursor-pointer active:scale-[0.99] transition-transform"
+              aria-label="상생 혜택 쿠폰 받기"
+              className="group relative overflow-hidden rounded-2xl bg-white border border-slate-200/80 shadow-sm flex items-center justify-between cursor-pointer active:scale-[0.99] hover:border-slate-300 transition-all"
             >
-              <div className="flex items-center gap-3">
-                <div className="size-11 rounded-full border-2 border-white/80 flex items-center justify-center font-black text-xl text-white">
-                  %
-                </div>
-                <div className="flex flex-col">
-                  <span className="text-[10px] font-extrabold tracking-widest text-sky-200 uppercase">
-                    POPPLE ONLY
-                  </span>
-                  <p className="text-base font-black leading-snug">
-                    지역축제 갈 때 혜택도 챙겨요
-                  </p>
-                  <p className="text-xs text-sky-100 font-medium">
-                    웰컴 쿠폰팩 준비중
-                  </p>
-                </div>
+              {/* 좌측 콘텐츠 영역 */}
+              <div className="flex-1 py-3.5 pl-4 pr-2 min-w-0">
+                <span className="text-sky-600 bg-sky-50 text-[11px] font-semibold px-2 py-0.5 rounded-full inline-block">
+                  상생 혜택
+                </span>
+                <p className="text-slate-800 font-bold text-sm mt-1 leading-snug">
+                  축제 즐기고, 인근 맛집·카페 할인
+                </p>
+                <p className="text-slate-500 text-xs mt-0.5 leading-normal">
+                  현장 대기시간 공유하고 쿠폰 받기
+                </p>
               </div>
-              <div className="size-8 rounded-full bg-white/20 flex items-center justify-center text-white shrink-0">
-                <ChevronRight className="size-5" />
+
+              {/* 세로 점선 절취선 및 상/하단 오목 홈 (Punch Hole) */}
+              <div className="relative self-stretch flex flex-col items-center justify-center shrink-0">
+                {/* 상단 오목 홈 */}
+                <div className="w-3.5 h-3.5 rounded-full bg-slate-50 border border-slate-200/80 absolute -top-1.5 left-1/2 -translate-x-1/2 pointer-events-none" />
+                {/* 세로 점선 절취선 */}
+                <div className="w-0 flex-1 border-r-2 border-dashed border-slate-200 my-2 mx-2" />
+                {/* 하단 오목 홈 */}
+                <div className="w-3.5 h-3.5 rounded-full bg-slate-50 border border-slate-200/80 absolute -bottom-1.5 left-1/2 -translate-x-1/2 pointer-events-none" />
+              </div>
+
+              {/* 우측 혜택 강조 영역 */}
+              <div className="shrink-0 py-3.5 pl-2 pr-4 flex flex-col items-center justify-center text-center min-w-[76px]">
+                <span className="text-[11px] text-slate-400 font-medium leading-none">
+                  최대
+                </span>
+                <span className="text-blue-500 font-extrabold text-sm tracking-tight mt-1 leading-none whitespace-nowrap">
+                  20% 할인
+                </span>
               </div>
             </section>
 
