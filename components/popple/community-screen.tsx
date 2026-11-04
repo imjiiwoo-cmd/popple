@@ -303,9 +303,9 @@ export function CommunityScreen({
 
       {/* 2. 메인 컨텐츠 영역 */}
       <main className="mx-auto w-full max-w-md px-4 pt-4 sm:pt-6 pb-3 flex flex-col gap-4">
-        {/* [1. 상단 카테고리 필터 탭 (중앙 정렬 단일 세그먼트 컨트롤)] */}
-        <section aria-label="커뮤니티 카테고리 필터" className="flex justify-center items-center w-full">
-          <div className="flex items-center justify-center bg-slate-100 rounded-full p-1 border border-slate-200/60 mx-auto w-fit max-w-full overflow-x-auto scrollbar-none shadow-2xs">
+        {/* [1. 상단 카테고리 필터 탭 (후기 카드 규격 일치 전체 너비 세그먼트 컨트롤)] */}
+        <section aria-label="커뮤니티 카테고리 필터" className="w-full">
+          <div className="grid grid-cols-4 gap-1.5 bg-white border border-slate-200/80 shadow-sm rounded-2xl p-1.5 w-full">
             {CATEGORY_TABS.map((tab) => {
               const isSelected = selectedCategory === tab.id
               return (
@@ -313,13 +313,13 @@ export function CommunityScreen({
                   key={tab.id}
                   type="button"
                   onClick={() => setSelectedCategory(tab.id)}
-                  className={`shrink-0 flex items-center gap-1.5 px-3.5 py-1.5 text-xs rounded-full transition-all whitespace-nowrap cursor-pointer select-none active:scale-95 ${
+                  className={`flex items-center justify-center gap-1 sm:gap-1.5 py-2.5 sm:py-3 px-1 text-xs sm:text-sm font-semibold tracking-tight rounded-xl transition-all whitespace-nowrap cursor-pointer select-none active:scale-95 ${
                     isSelected
-                      ? 'bg-blue-500 text-white font-semibold shadow-sm'
-                      : 'bg-transparent text-slate-500 hover:text-slate-700 font-medium'
+                      ? 'bg-blue-500 text-white shadow-sm'
+                      : 'bg-transparent text-slate-600 hover:bg-slate-50 hover:text-slate-900 font-medium'
                   }`}
                 >
-                  <span className="text-[11px] leading-none">{tab.icon}</span>
+                  <span className="text-sm sm:text-base leading-none">{tab.icon}</span>
                   <span>{tab.label}</span>
                 </button>
               )
