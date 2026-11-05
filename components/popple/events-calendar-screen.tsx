@@ -661,14 +661,10 @@ export function EventsCalendarScreen({
 
   return (
     <div className="relative flex flex-col min-h-dvh bg-[#F8FAFC] text-slate-900 pb-28">
-      {/* 1. 상단 타이틀 및 월 선택 드롭다운 영역 */}
-      <header className="px-5 pt-5 sm:pt-6 pb-4">
-        <div className="mx-auto max-w-md flex items-center justify-between gap-3 pl-2.5 sm:pl-3 pr-1">
-          <h1 className="text-[22px] sm:text-[23px] font-black text-slate-900 tracking-tight">
-            이번 주, 어디로 갈까요?
-          </h1>
-
-          {/* 상단 우측 월 선택 드롭다운 버튼 (예: [📅 11월 ∨]) */}
+      {/* 1. 상단 월 선택 드롭다운 영역 (좌측 정렬) */}
+      <header className="pt-5 sm:pt-6 pb-3 pl-4 pr-5">
+        <div className="mx-auto max-w-md flex items-center justify-start">
+          {/* 상단 좌측 월 선택 드롭다운 버튼 (예: [📅 11월 ∨]) */}
           <div className="relative shrink-0" ref={monthDropdownRef}>
             <button
               type="button"
@@ -687,7 +683,7 @@ export function EventsCalendarScreen({
 
             {/* 월 선택 드롭다운 팝오버 */}
             {isMonthDropdownOpen && (
-              <div className="absolute right-0 mt-2 w-44 bg-white border border-slate-200 rounded-2xl shadow-xl p-2 z-50 grid grid-cols-3 gap-1.5 animate-in fade-in zoom-in-95 duration-150">
+              <div className="absolute left-0 mt-2 w-44 bg-white border border-slate-200 rounded-2xl shadow-xl p-2 z-50 grid grid-cols-3 gap-1.5 animate-in fade-in zoom-in-95 duration-150">
                 {MONTHS.map((m) => (
                   <button
                     key={m}
@@ -947,51 +943,17 @@ export function EventsCalendarScreen({
         </div>
       </section>
 
-      {/* 4. 해당 주/선택일 진행 행사 리스트 렌더링 */}
+      {/* 4. 해당 선택일 진행 행사 리스트 렌더링 */}
       <main className="px-5 mt-5 sm:mt-6 flex flex-col">
         <div className="mx-auto w-full max-w-md">
-          {/* 타이틀 헤더 및 보기 방식 토글 (선택일 vs 주간 전체) */}
-          <div className="mb-4">
-            <div className="flex items-center justify-end mb-2">
-              {/* 보기 방식 토글 (선택일 / 주간 전체) */}
-              <div className="flex items-center bg-slate-200/60 p-0.5 rounded-xl text-[11px] font-bold">
-                <button
-                  type="button"
-                  onClick={() => setViewAllWeek(false)}
-                  className={cn(
-                    'px-2.5 py-1 rounded-lg transition-all',
-                    !viewAllWeek
-                      ? 'bg-white text-[#1884F7] shadow-2xs font-black'
-                      : 'text-slate-500 hover:text-slate-800',
-                  )}
-                >
-                  선택 일자
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setViewAllWeek(true)}
-                  className={cn(
-                    'px-2.5 py-1 rounded-lg transition-all',
-                    viewAllWeek
-                      ? 'bg-white text-[#1884F7] shadow-2xs font-black'
-                      : 'text-slate-500 hover:text-slate-800',
-                  )}
-                >
-                  이번 주 전체
-                </button>
-              </div>
-            </div>
-
-            <div className="flex items-baseline justify-between mt-1 pl-2.5 sm:pl-3 pr-1">
-              <h2 className="text-[21px] font-black text-slate-900 tracking-tight">
-                {viewAllWeek
-                  ? '이번 주 진행 중인 행사'
-                  : `${selectedDate.getMonth() + 1}월 ${selectedDate.getDate()}일 (${getDayLabel(selectedDate)}) 행사`}
-              </h2>
-              <span className="text-xs font-bold text-slate-400">
-                {viewAllWeek ? `${totalEventsInWeek}개의 행사` : `${selectedDateEventsCount}개의 행사`}
-              </span>
-            </div>
+          {/* 상세 날짜 헤더 및 행사 수 (좌측: 11.05 목요일 / 우측 끝: 29개의 행사) */}
+          <div className="flex items-center justify-between mb-3.5 px-1">
+            <span className="text-slate-900 font-bold text-lg tracking-tight">
+              {`${String(selectedDate.getMonth() + 1).padStart(2, '0')}.${String(selectedDate.getDate()).padStart(2, '0')} ${getDayLabel(selectedDate)}요일`}
+            </span>
+            <span className="text-slate-400 text-sm font-medium">
+              {`${selectedDateEventsCount}개의 행사`}
+            </span>
           </div>
 
           {/* [행사 리스트 렌더링: 로딩 중 스켈레톤 노출 / 팝업스토어 / 날짜별 축제 목록] */}
@@ -1015,14 +977,10 @@ export function EventsCalendarScreen({
                   <CalendarIcon className="size-6 stroke-[1.8]" />
                 </div>
                 <p className="text-base font-bold text-slate-800">
-                  {viewAllWeek
-                    ? '해당 조건에 진행 중인 팝업스토어가 없어요'
-                    : '선택하신 날짜에 진행 중인 팝업스토어가 없어요'}
+                  선택하신 날짜에 진행 중인 팝업스토어가 없어요
                 </p>
                 <p className="text-xs text-slate-500 break-keep">
-                  {viewAllWeek
-                    ? '지역 필터를 ‘전체 지역’ 또는 다른 지역으로 변경해보세요!'
-                    : '다른 날짜를 선택하거나 상단에서 ‘이번 주 전체’를 확인해보세요!'}
+                  다른 날짜를 선택하거나 지역 필터를 변경해보세요!
                 </p>
               </div>
             ) : (
@@ -1128,18 +1086,14 @@ export function EventsCalendarScreen({
                 <CalendarIcon className="size-6 stroke-[1.8]" />
               </div>
               <p className="text-base font-bold text-slate-800">
-                {viewAllWeek
-                  ? '해당 조건에 진행 중인 행사가 없어요'
-                  : '선택하신 날짜에 진행 중인 행사가 없어요'}
+                선택하신 날짜에 진행 중인 행사가 없어요
               </p>
               <p className="text-xs text-slate-500 break-keep">
-                {viewAllWeek
-                  ? '지역 필터를 변경하거나 다른 주차로 이동해보세요!'
-                  : '다른 날짜를 선택하거나 상단에서 ‘이번 주 전체’를 확인해보세요!'}
+                다른 날짜를 선택하거나 지역 필터를 변경해보세요!
               </p>
             </div>
           ) : (
-            /* 날짜별 오름차순 그룹 및 카드 리스트 */
+            /* 날짜별 카드 리스트 */
             <div className="flex flex-col gap-6">
               {visibleGroups.map((group) => {
                 if (group.events.length === 0 && !group.isSelected) {
@@ -1152,24 +1106,6 @@ export function EventsCalendarScreen({
                     id={`date-section-${group.dateKey}`}
                     className="flex flex-col scroll-mt-24"
                   >
-                    {/* 날짜 오름차순 헤더 (예: 10.07 화요일 [선택한 날짜]) */}
-                    <div className="flex items-center justify-between mb-3 pl-2.5 sm:pl-3 pr-1">
-                      <div className="flex items-baseline gap-2">
-                        <span className="text-[23px] font-black text-slate-900 tracking-tight">
-                          {group.monthDayStr}
-                        </span>
-                        <span className="text-sm font-semibold text-slate-400">
-                          {group.dayLabel}
-                        </span>
-                      </div>
-
-                      {group.isSelected && (
-                        <span className="bg-[#EAF3FF] text-[#1884F7] text-xs font-bold px-2.5 py-0.5 rounded-full">
-                          선택한 날짜
-                        </span>
-                      )}
-                    </div>
-
                     {/* 해당 일자의 행사 카드 리스트 */}
                     {group.events.length === 0 ? (
                       <div className="bg-white rounded-2xl border border-slate-100 p-4 text-center text-xs text-slate-400">
